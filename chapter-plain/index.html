@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chapter Command</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ── LOGIN SCREEN ─────────────────────────────────────────── -->
+  <div id="login-screen" class="screen">
+    <div class="login-bg-glow"></div>
+    <div class="login-card">
+      <div class="login-crest">ΩΨΦ</div>
+      <h1 class="login-title">Chapter Command</h1>
+      <p class="login-sub">Graduate Chapter Management System</p>
+      <div class="login-divider"></div>
+
+      <div class="tab-row">
+        <button class="tab-btn active" id="tab-password" onclick="switchTab('password')">Password</button>
+        <button class="tab-btn" id="tab-magic" onclick="switchTab('magic')">Magic Link</button>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="field">
+          <label class="field-label">Email Address</label>
+          <input id="login-email" class="field-input" type="email" required placeholder="brother@example.com" />
+        </div>
+        <div class="field" id="password-field">
+          <label class="field-label">Password</label>
+          <input id="login-password" class="field-input" type="password" placeholder="••••••••" />
+        </div>
+        <div id="login-error" class="error-msg" style="display:none"></div>
+        <button class="btn-primary" type="submit" id="login-btn">Sign In</button>
+      </form>
+
+      <div id="magic-sent" class="success-msg" style="display:none">
+        Check your inbox — a sign-in link has been sent.
+      </div>
+    </div>
+    <p class="login-footer">Secure access for chapter officers and members</p>
+  </div>
+
+  <!-- ── APP SHELL ─────────────────────────────────────────────── -->
+  <div id="app-shell" class="screen" style="display:none">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-crest">ΩΨΦ</div>
+        <div>
+          <div class="sidebar-name">Chapter</div>
+          <div class="sidebar-tag">Command</div>
+        </div>
+      </div>
+      <div class="sidebar-rule"></div>
+      <nav class="sidebar-nav">
+        <a class="nav-link active" data-panel="overview"   onclick="showPanel('overview')">
+          <span class="nav-icon">⊞</span> Dashboard
+        </a>
+        <a class="nav-link" data-panel="members"    onclick="showPanel('members')">
+          <span class="nav-icon">◎</span> Members
+        </a>
+        <a class="nav-link" data-panel="compliance" onclick="showPanel('compliance')">
+          <span class="nav-icon">✓</span> Compliance
+        </a>
+        <a class="nav-link" data-panel="financial"  onclick="showPanel('financial')">
+          <span class="nav-icon">$</span> Financial
+        </a>
+        <a class="nav-link" data-panel="leadership" onclick="showPanel('leadership')">
+          <span class="nav-icon">◈</span> Leadership
+        </a>
+        <a class="nav-link" data-panel="events"     onclick="showPanel('events')">
+          <span class="nav-icon">◷</span> Events
+        </a>
+        <a class="nav-link" data-panel="reports"    onclick="showPanel('reports')">
+          <span class="nav-icon">≡</span> Reports
+        </a>
+        <a class="nav-link" data-panel="documents"  onclick="showPanel('documents')">
+          <span class="nav-icon">□</span> Documents
+        </a>
+      </nav>
+      <div class="sidebar-footer">FY 2024–25</div>
+    </aside>
+
+    <!-- Main area -->
+    <div class="main-area">
+
+      <!-- Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+          <span class="header-label" id="header-label">Dashboard</span>
+        </div>
+        <div class="header-right">
+          <div class="user-chip">
+            <div class="user-avatar" id="user-avatar">--</div>
+            <span class="user-email" id="user-email"></span>
+          </div>
+          <button class="btn-icon" onclick="signOut()" title="Sign out">⏻</button>
+        </div>
+      </header>
+
+      <!-- Panels -->
+      <main class="content" id="content">
+
+        <!-- OVERVIEW -->
+        <div class="panel active" id="panel-overview">
+          <div class="page-title">
+            <h2>Dashboard</h2>
+            <p>Chapter overview — FY 2024–25</p>
+          </div>
+          <div class="stats-row" id="overview-stats">
+            <div class="stat-card" id="stat-total"></div>
+            <div class="stat-card warn" id="stat-dues"></div>
+            <div class="stat-card warn" id="stat-bgc"></div>
+            <div class="stat-card danger" id="stat-bounces"></div>
+          </div>
+          <div class="two-col">
+            <div class="card">
+              <div class="card-title">Compliance Overview</div>
+              <div id="compliance-bars"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Upcoming Events</div>
+              <div id="upcoming-events"></div>
+            </div>
+          </div>
+          <div class="section-hdr">
+            <span class="section-title">Attention Required</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>Brother</th><th>Issue</th><th>IMDP</th><th>Risk Mgmt</th><th>BGC</th><th>Financial</th>
+              </tr></thead>
+              <tbody id="attention-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- MEMBERS -->
+        <div class="panel" id="panel-members">
+          <div class="page-title-row">
+            <div>
+              <h2>Members</h2>
+              <p id="members-count">Loading…</p>
+            </div>
+            <button class="btn-primary" onclick="openMemberModal()">+ Add Member</button>
+          </div>
+          <div class="toolbar">
+            <div class="search-wrap">
+              <span class="search-icon">⌕</span>
+              <input class="search-input" id="member-search" type="text" placeholder="Search name, city, employer…" oninput="filterMembers()" />
+            </div>
+            <div class="filter-row" id="member-filters">
+              <button class="filter-btn active" data-filter="all"        onclick="setMemberFilter(this,'all')">All</button>
+              <button class="filter-btn"        data-filter="financial"  onclick="setMemberFilter(this,'financial')">Financial</button>
+              <button class="filter-btn"        data-filter="bounced"    onclick="setMemberFilter(this,'bounced')">Bounced</button>
+              <button class="filter-btn"        data-filter="inactive"   onclick="setMemberFilter(this,'inactive')">Inactive</button>
+            </div>
+          </div>
+          <div class="member-grid" id="member-grid"></div>
+        </div>
+
+        <!-- COMPLIANCE -->
+        <div class="panel" id="panel-compliance">
+          <div class="page-title-row">
+            <div><h2>Compliance</h2><p>Certifications, BGC, and standing</p></div>
+            <button class="btn-secondary" onclick="exportCompliance()">Export CSV</button>
+          </div>
+          <div class="stats-row" id="compliance-stats"></div>
+          <div class="section-hdr"><span class="section-title">Status by Member</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>Brother</th><th>IMDP</th><th>Risk Mgmt</th><th>Ritual</th>
+                <th>BGC</th><th>BGC Expires</th><th>Youth</th><th>Financial</th>
+              </tr></thead>
+              <tbody id="compliance-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- FINANCIAL -->
+        <div class="panel" id="panel-financial">
+          <div class="page-title-row">
+            <div><h2>Financial</h2><p>Dues, Grand Tax, and voter eligibility — FY 2024–25</p></div>
+            <button class="btn-secondary" onclick="exportFinancial()">Export CSV</button>
+          </div>
+          <div class="stats-row" id="financial-stats"></div>
+          <div class="section-hdr"><span class="section-title">Dues Ledger</span></div>
+          <div class="table-wrap" style="margin-bottom:1.5rem">
+            <table class="data-table">
+              <thead><tr><th>Brother</th><th>Term</th><th>Owed</th><th>Paid</th><th>Balance</th><th>Status</th><th>Paid Date</th></tr></thead>
+              <tbody id="dues-tbody"></tbody>
+            </table>
+          </div>
+          <div class="section-hdr"><span class="section-title">Grand Tax</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Brother</th><th>Owed</th><th>Paid</th><th>Status</th><th>Paid Date</th><th>Confirmation #</th></tr></thead>
+              <tbody id="tax-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- LEADERSHIP -->
+        <div class="panel" id="panel-leadership">
+          <div class="page-title"><h2>Leadership</h2><p>Executive Board and committees — FY 2024–25</p></div>
+          <div class="stats-row" id="leadership-stats"></div>
+          <div class="section-hdr"><span class="section-title">Executive Board</span></div>
+          <div class="table-wrap" style="margin-bottom:1.5rem">
+            <table class="data-table">
+              <thead><tr><th>Position</th><th>Brother</th><th>Email</th><th>Term</th></tr></thead>
+              <tbody id="exec-tbody"></tbody>
+            </table>
+          </div>
+          <div class="section-hdr"><span class="section-title">Committee Chairs</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Committee</th><th>Chair</th><th>Email</th><th>Term</th></tr></thead>
+              <tbody id="committee-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- EVENTS -->
+        <div class="panel" id="panel-events">
+          <div class="page-title-row">
+            <div><h2>Events</h2><p>Planning, approvals, and attendance</p></div>
+            <button class="btn-primary" onclick="openEventModal()">+ New Event</button>
+          </div>
+          <div class="stats-row" id="events-stats"></div>
+          <div class="section-hdr"><span class="section-title">Upcoming Events</span></div>
+          <div class="table-wrap" style="margin-bottom:1.5rem">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Event</th><th>Type</th><th>Location</th><th>Approval</th><th>Insurance</th><th>BGC Req.</th><th></th></tr></thead>
+              <tbody id="events-upcoming-tbody"></tbody>
+            </table>
+          </div>
+          <div class="section-hdr"><span class="section-title">Past Events</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Event</th><th>Type</th><th>Location</th><th>Status</th></tr></thead>
+              <tbody id="events-past-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- REPORTS -->
+        <div class="panel" id="panel-reports">
+          <div class="page-title"><h2>Reports</h2><p>Quick-access data views for chapter operations</p></div>
+          <div class="report-grid">
+            <div class="report-card" onclick="showReport('voters')">
+              <div class="report-icon">☑</div>
+              <div class="report-name">Voter Eligibility</div>
+              <div class="report-desc">Financial brothers eligible to vote in chapter elections.</div>
+            </div>
+            <div class="report-card" onclick="showReport('youth')">
+              <div class="report-icon">⚐</div>
+              <div class="report-name">Youth Program Eligible</div>
+              <div class="report-desc">Brothers with cleared, non-expired BGC for youth events.</div>
+            </div>
+            <div class="report-card" onclick="showReport('bounces')">
+              <div class="report-icon">✉</div>
+              <div class="report-name">Email Bounces</div>
+              <div class="report-desc">Addresses flagged as bouncing — needs cleanup.</div>
+            </div>
+            <div class="report-card" onclick="showReport('noncompliant')">
+              <div class="report-icon">⚠</div>
+              <div class="report-name">Non-Compliant Brothers</div>
+              <div class="report-desc">Brothers missing 2+ compliance items.</div>
+            </div>
+          </div>
+          <div id="report-output"></div>
+        </div>
+
+        <!-- DOCUMENTS -->
+        <div class="panel" id="panel-documents">
+          <div class="page-title-row">
+            <div><h2>Documents</h2><p id="docs-count">Loading…</p></div>
+            <button class="btn-primary" onclick="openDocModal()">+ Add Record</button>
+          </div>
+          <div class="filter-row" id="doc-filters" style="margin-bottom:1.25rem; flex-wrap:wrap; gap:4px; display:flex">
+            <button class="filter-btn active" onclick="setDocFilter(this,'all')">All</button>
+            <button class="filter-btn" onclick="setDocFilter(this,'constitution_bylaws')">Constitution</button>
+            <button class="filter-btn" onclick="setDocFilter(this,'financial_policy')">Financial</button>
+            <button class="filter-btn" onclick="setDocFilter(this,'minutes')">Minutes</button>
+            <button class="filter-btn" onclick="setDocFilter(this,'strategic_plan')">Strategic</button>
+            <button class="filter-btn" onclick="setDocFilter(this,'compliance')">Compliance</button>
+            <button class="filter-btn" onclick="setDocFilter(this,'historical')">Historical</button>
+            <button class="filter-btn" onclick="setDocFilter(this,'other')">Other</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Title</th><th>Category</th><th>Version</th><th>Effective</th><th>Expires</th><th>Status</th></tr></thead>
+              <tbody id="docs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ── MEMBER MODAL ───────────────────────────────────────────── -->
+  <div class="modal-overlay" id="member-modal" style="display:none" onclick="closeModal('member-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title" id="member-modal-title">Add Member</span>
+        <button class="modal-close" onclick="closeModal('member-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">First Name *</label><input class="field-input" id="m-first_name" /></div>
+          <div class="field"><label class="field-label">Last Name *</label><input class="field-input" id="m-last_name" /></div>
+          <div class="field"><label class="field-label">Primary Email *</label><input class="field-input" id="m-email_primary" type="email" /></div>
+          <div class="field"><label class="field-label">Mobile Phone</label><input class="field-input" id="m-phone_mobile" /></div>
+          <div class="field"><label class="field-label">City</label><input class="field-input" id="m-city" /></div>
+          <div class="field"><label class="field-label">State</label><input class="field-input" id="m-state" maxlength="2" /></div>
+          <div class="field"><label class="field-label">Employer</label><input class="field-input" id="m-employer" /></div>
+          <div class="field"><label class="field-label">Occupation</label><input class="field-input" id="m-occupation" /></div>
+          <div class="field"><label class="field-label">Member Number</label><input class="field-input" id="m-member_number" /></div>
+          <div class="field"><label class="field-label">Chapter Initiated</label><input class="field-input" id="m-chapter_initiated" /></div>
+          <div class="field"><label class="field-label">Initiated Date</label><input class="field-input" id="m-initiated_date" type="date" /></div>
+          <div class="field">
+            <label class="field-label">Membership Status</label>
+            <select class="field-input" id="m-membership_status">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+              <option value="honorary">Honorary</option>
+              <option value="life">Life</option>
+            </select>
+          </div>
+        </div>
+        <div id="member-modal-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('member-modal')">Cancel</button>
+          <button class="btn-primary" id="member-save-btn" onclick="saveMember()">Add Member</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── EVENT MODAL ────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="event-modal" style="display:none" onclick="closeModal('event-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title" id="event-modal-title">New Event</span>
+        <button class="modal-close" onclick="closeModal('event-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Event Name *</label><input class="field-input" id="e-event_name" /></div>
+          <div class="field">
+            <label class="field-label">Event Type</label>
+            <select class="field-input" id="e-event_type">
+              <option value="chapter_meeting">Chapter Meeting</option>
+              <option value="community_service">Community Service</option>
+              <option value="social">Social</option>
+              <option value="fundraiser">Fundraiser</option>
+              <option value="scholarship">Scholarship</option>
+              <option value="fraternal">Fraternal</option>
+              <option value="national">National</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field"><label class="field-label">Event Date *</label><input class="field-input" id="e-event_date" type="date" /></div>
+          <div class="field"><label class="field-label">Location</label><input class="field-input" id="e-location" /></div>
+          <div class="field">
+            <label class="field-label">Approval Status</label>
+            <select class="field-input" id="e-approval_status">
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="denied">Denied</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="field-input" id="e-description" rows="3"></textarea></div>
+        </div>
+        <div class="checkbox-row">
+          <label class="check-label"><input type="checkbox" id="e-requires_approval" /> Requires Approval</label>
+          <label class="check-label"><input type="checkbox" id="e-requires_insurance" /> Requires Insurance</label>
+          <label class="check-label"><input type="checkbox" id="e-requires_bgc" /> BGC Required</label>
+          <label class="check-label"><input type="checkbox" id="e-insurance_filed" /> Insurance Filed</label>
+        </div>
+        <div id="event-modal-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('event-modal')">Cancel</button>
+          <button class="btn-primary" id="event-save-btn" onclick="saveEvent()">Create Event</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DOCUMENT MODAL ─────────────────────────────────────────── -->
+  <div class="modal-overlay" id="doc-modal" style="display:none" onclick="closeModal('doc-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Add Document Record</span>
+        <button class="modal-close" onclick="closeModal('doc-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Title *</label><input class="field-input" id="d-title" /></div>
+          <div class="field">
+            <label class="field-label">Category</label>
+            <select class="field-input" id="d-doc_category">
+              <option value="constitution_bylaws">Constitution & Bylaws</option>
+              <option value="financial_policy">Financial Policy</option>
+              <option value="minutes">Minutes</option>
+              <option value="calendar">Calendar</option>
+              <option value="strategic_plan">Strategic Plan</option>
+              <option value="historical">Historical</option>
+              <option value="compliance">Compliance</option>
+              <option value="operational">Operational</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field"><label class="field-label">Version</label><input class="field-input" id="d-version" placeholder="e.g. v2.1" /></div>
+          <div class="field"><label class="field-label">File Name</label><input class="field-input" id="d-file_name" placeholder="document.pdf" /></div>
+          <div class="field"><label class="field-label">Effective Date</label><input class="field-input" id="d-effective_date" type="date" /></div>
+          <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="d-expiration_date" type="date" /></div>
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="field-input" id="d-description" rows="2"></textarea></div>
+        </div>
+        <div id="doc-modal-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('doc-modal')">Cancel</button>
+          <button class="btn-primary" onclick="saveDoc()">Add Document</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase SDK (CDN — no npm needed) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
