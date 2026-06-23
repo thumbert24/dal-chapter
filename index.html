@@ -51,7 +51,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <div class="sidebar-crest">AΦA</div>
+        <div class="sidebar-crest">ΑΦΑ</div>
         <div>
           <div class="sidebar-name">Chapter</div>
           <div class="sidebar-tag">Command</div>
@@ -84,7 +84,7 @@
           <span class="nav-icon">□</span> Documents
         </a>
       </nav>
-      <div class="sidebar-footer">FY 2025-26</div>
+      <div class="sidebar-footer">FY 2024–25</div>
     </aside>
 
     <!-- Main area -->
@@ -112,7 +112,7 @@
         <div class="panel active" id="panel-overview">
           <div class="page-title">
             <h2>Dashboard</h2>
-            <p>Chapter overview — FY 2025-26</p>
+            <p>Chapter overview — FY 2024–25</p>
           </div>
           <div class="stats-row" id="overview-stats">
             <div class="stat-card" id="stat-total"></div>
@@ -189,7 +189,7 @@
         <!-- FINANCIAL -->
         <div class="panel" id="panel-financial">
           <div class="page-title-row">
-            <div><h2>Financial</h2><p>Dues, Grand Tax, and voter eligibility — FY 2025-26</p></div>
+            <div><h2>Financial</h2><p>Dues, Grand Tax, and voter eligibility — FY 2024–25</p></div>
             <button class="btn-secondary" onclick="exportFinancial()">Export CSV</button>
           </div>
           <div class="stats-row" id="financial-stats"></div>
@@ -211,7 +211,7 @@
 
         <!-- LEADERSHIP -->
         <div class="panel" id="panel-leadership">
-          <div class="page-title"><h2>Leadership</h2><p>Executive Board and committees — FY </p></div>
+          <div class="page-title"><h2>Leadership</h2><p>Executive Board and committees — FY 2024–25</p></div>
           <div class="stats-row" id="leadership-stats"></div>
           <div class="section-hdr"><span class="section-title">Executive Board</span></div>
           <div class="table-wrap" style="margin-bottom:1.5rem">
@@ -435,6 +435,271 @@
           <button class="btn-primary" onclick="saveDoc()">Add Document</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ── MEMBER DETAIL DRAWER ─────────────────────────────────── -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="member-drawer">
+    <div class="drawer-header">
+      <div class="drawer-avatar" id="drawer-avatar">--</div>
+      <div>
+        <div class="drawer-name"  id="drawer-name">Brother Name</div>
+        <div class="drawer-email" id="drawer-email">email</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" onclick="switchDrawerTab('profile')">Profile</button>
+      <button class="drawer-tab"        onclick="switchDrawerTab('financial')">Financial</button>
+      <button class="drawer-tab"        onclick="switchDrawerTab('certs')">Certifications</button>
+      <button class="drawer-tab"        onclick="switchDrawerTab('bgc')">Background Check</button>
+    </div>
+
+    <div class="drawer-body">
+
+      <!-- PROFILE TAB -->
+      <div class="drawer-tab-content active" id="dtab-profile">
+        <div class="drawer-section">
+          <div class="drawer-section-title">Contact Information</div>
+          <div class="form-grid">
+            <div class="field"><label class="field-label">First Name</label><input class="field-input" id="dp-first_name" /></div>
+            <div class="field"><label class="field-label">Last Name</label><input class="field-input" id="dp-last_name" /></div>
+            <div class="field"><label class="field-label">Primary Email</label><input class="field-input" id="dp-email_primary" type="email" /></div>
+            <div class="field"><label class="field-label">Secondary Email</label><input class="field-input" id="dp-email_secondary" type="email" /></div>
+            <div class="field"><label class="field-label">Mobile Phone</label><input class="field-input" id="dp-phone_mobile" /></div>
+            <div class="field"><label class="field-label">Home Phone</label><input class="field-input" id="dp-phone_home" /></div>
+          </div>
+        </div>
+        <div class="drawer-section">
+          <div class="drawer-section-title">Address</div>
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Address Line 1</label><input class="field-input" id="dp-address_line1" /></div>
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Address Line 2</label><input class="field-input" id="dp-address_line2" /></div>
+            <div class="field"><label class="field-label">City</label><input class="field-input" id="dp-city" /></div>
+            <div class="field"><label class="field-label">State</label><input class="field-input" id="dp-state" maxlength="2" /></div>
+            <div class="field"><label class="field-label">ZIP</label><input class="field-input" id="dp-zip" /></div>
+          </div>
+        </div>
+        <div class="drawer-section">
+          <div class="drawer-section-title">Professional</div>
+          <div class="form-grid">
+            <div class="field"><label class="field-label">Employer</label><input class="field-input" id="dp-employer" /></div>
+            <div class="field"><label class="field-label">Occupation</label><input class="field-input" id="dp-occupation" /></div>
+            <div class="field" style="grid-column:1/-1"><label class="field-label">LinkedIn URL</label><input class="field-input" id="dp-linkedin_url" /></div>
+          </div>
+        </div>
+        <div class="drawer-section">
+          <div class="drawer-section-title">Membership</div>
+          <div class="form-grid">
+            <div class="field"><label class="field-label">Member Number</label><input class="field-input" id="dp-member_number" /></div>
+            <div class="field"><label class="field-label">Chapter Initiated</label><input class="field-input" id="dp-chapter_initiated" /></div>
+            <div class="field"><label class="field-label">Initiated Date</label><input class="field-input" id="dp-initiated_date" type="date" /></div>
+            <div class="field">
+              <label class="field-label">Status</label>
+              <select class="field-input" id="dp-membership_status">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+                <option value="honorary">Honorary</option>
+                <option value="life">Life</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="drawer-section">
+          <div class="drawer-section-title">Email Health</div>
+          <div class="status-row">
+            <span class="status-label">Email Bounced</span>
+            <div class="toggle-wrap">
+              <div class="toggle" id="dp-email_bounced" onclick="toggleField('email_bounced')"></div>
+              <span id="dp-email_bounced-label" style="font-size:12px;color:var(--muted)">No</span>
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px"><label class="field-label">Bounce Date</label><input class="field-input" id="dp-email_bounce_date" type="date" /></div>
+          <div class="field"><label class="field-label">Bounce Reason</label><input class="field-input" id="dp-email_bounce_reason" placeholder="e.g. address not found" /></div>
+        </div>
+      </div>
+
+      <!-- FINANCIAL TAB -->
+      <div class="drawer-tab-content" id="dtab-financial">
+        <div class="drawer-section">
+          <div class="drawer-section-title">Standing</div>
+          <div class="status-row">
+            <span class="status-label">Financial Standing</span>
+            <div class="toggle-wrap">
+              <div class="toggle" id="dp-financial_standing" onclick="toggleField('financial_standing')"></div>
+              <span id="dp-financial_standing-label" style="font-size:12px;color:var(--muted)">No</span>
+            </div>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Voting Eligible</span>
+            <div class="toggle-wrap">
+              <div class="toggle" id="dp-voting_eligible" onclick="toggleField('voting_eligible')"></div>
+              <span id="dp-voting_eligible-label" style="font-size:12px;color:var(--muted)">No</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-section">
+          <div class="drawer-section-title">Log Dues Payment</div>
+          <div class="form-grid">
+            <div class="field"><label class="field-label">Fiscal Year</label><input class="field-input" id="fin-fiscal_year" placeholder="2024-25" /></div>
+            <div class="field"><label class="field-label">Term</label>
+              <select class="field-input" id="fin-term">
+                <option value="Annual">Annual</option>
+                <option value="Spring">Spring</option>
+                <option value="Fall">Fall</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Amount Owed ($)</label><input class="field-input" id="fin-amount_owed" type="number" placeholder="0.00" /></div>
+            <div class="field"><label class="field-label">Amount Paid ($)</label><input class="field-input" id="fin-amount_paid" type="number" placeholder="0.00" /></div>
+            <div class="field"><label class="field-label">Payment Date</label><input class="field-input" id="fin-paid_date" type="date" /></div>
+            <div class="field"><label class="field-label">Method</label>
+              <select class="field-input" id="fin-payment_method">
+                <option value="">Select…</option>
+                <option value="Zelle">Zelle</option>
+                <option value="Cash">Cash</option>
+                <option value="Check">Check</option>
+                <option value="Venmo">Venmo</option>
+                <option value="CashApp">CashApp</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-primary" style="width:100%;margin-top:4px" onclick="saveDues()">Log Dues Payment</button>
+        </div>
+
+        <div class="drawer-section">
+          <div class="drawer-section-title">Log Grand Tax Payment</div>
+          <div class="form-grid">
+            <div class="field"><label class="field-label">Fiscal Year</label><input class="field-input" id="tax-fiscal_year" placeholder="2024-25" /></div>
+            <div class="field"><label class="field-label">Amount Owed ($)</label><input class="field-input" id="tax-amount_owed" type="number" placeholder="0.00" /></div>
+            <div class="field"><label class="field-label">Amount Paid ($)</label><input class="field-input" id="tax-amount_paid" type="number" placeholder="0.00" /></div>
+            <div class="field"><label class="field-label">Paid Date</label><input class="field-input" id="tax-paid_date" type="date" /></div>
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Confirmation #</label><input class="field-input" id="tax-confirmation_number" /></div>
+          </div>
+          <button class="btn-primary" style="width:100%;margin-top:4px" onclick="saveGrandTax()">Log Grand Tax Payment</button>
+        </div>
+
+        <div class="drawer-section">
+          <div class="drawer-section-title">Payment History</div>
+          <div id="fin-history"><p style="color:var(--dim);font-size:12px">Loading…</p></div>
+        </div>
+      </div>
+
+      <!-- CERTIFICATIONS TAB -->
+      <div class="drawer-tab-content" id="dtab-certs">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6">Update the status and dates for each certification. Changes are saved when you click Save on each card.</p>
+
+        <div class="cert-card" id="cert-card-imdp">
+          <div class="cert-card-title">IMDP</div>
+          <div class="cert-fields">
+            <div class="field"><label class="field-label">Status</label>
+              <select class="field-input" id="cert-imdp-status">
+                <option value="not_filed">Not Filed</option>
+                <option value="pending">Pending</option>
+                <option value="current">Current</option>
+                <option value="expired">Expired</option>
+                <option value="waived">Waived</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-imdp-provider" /></div>
+            <div class="field"><label class="field-label">Completed Date</label><input class="field-input" id="cert-imdp-completed_date" type="date" /></div>
+            <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="cert-imdp-expiration_date" type="date" /></div>
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Certificate #</label><input class="field-input" id="cert-imdp-certificate_number" /></div>
+          </div>
+          <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveCert('imdp')">Save IMDP</button>
+        </div>
+
+        <div class="cert-card" id="cert-card-risk_management">
+          <div class="cert-card-title">Risk Management</div>
+          <div class="cert-fields">
+            <div class="field"><label class="field-label">Status</label>
+              <select class="field-input" id="cert-risk_management-status">
+                <option value="not_filed">Not Filed</option>
+                <option value="pending">Pending</option>
+                <option value="current">Current</option>
+                <option value="expired">Expired</option>
+                <option value="waived">Waived</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-risk_management-provider" /></div>
+            <div class="field"><label class="field-label">Completed Date</label><input class="field-input" id="cert-risk_management-completed_date" type="date" /></div>
+            <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="cert-risk_management-expiration_date" type="date" /></div>
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Certificate #</label><input class="field-input" id="cert-risk_management-certificate_number" /></div>
+          </div>
+          <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveCert('risk_management')">Save Risk Mgmt</button>
+        </div>
+
+        <div class="cert-card" id="cert-card-ritual_training">
+          <div class="cert-card-title">Ritual Training</div>
+          <div class="cert-fields">
+            <div class="field"><label class="field-label">Status</label>
+              <select class="field-input" id="cert-ritual_training-status">
+                <option value="not_filed">Not Filed</option>
+                <option value="pending">Pending</option>
+                <option value="current">Current</option>
+                <option value="expired">Expired</option>
+                <option value="waived">Waived</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-ritual_training-provider" /></div>
+            <div class="field"><label class="field-label">Completed Date</label><input class="field-input" id="cert-ritual_training-completed_date" type="date" /></div>
+            <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="cert-ritual_training-expiration_date" type="date" /></div>
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Certificate #</label><input class="field-input" id="cert-ritual_training-certificate_number" /></div>
+          </div>
+          <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveCert('ritual_training')">Save Ritual</button>
+        </div>
+      </div>
+
+      <!-- BACKGROUND CHECK TAB -->
+      <div class="drawer-tab-content" id="dtab-bgc">
+        <div class="cert-card">
+          <div class="cert-card-title">Background Check Record</div>
+          <div class="cert-fields">
+            <div class="field"><label class="field-label">Status</label>
+              <select class="field-input" id="bgc-status">
+                <option value="not_filed">Not Filed</option>
+                <option value="pending">Pending</option>
+                <option value="current">Current</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Result</label>
+              <select class="field-input" id="bgc-result">
+                <option value="">Select…</option>
+                <option value="clear">Clear</option>
+                <option value="flagged">Flagged</option>
+                <option value="in_progress">In Progress</option>
+                <option value="pending">Pending</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="bgc-provider" placeholder="e.g. Sterling, Checkr" /></div>
+            <div class="field"><label class="field-label">Submitted Date</label><input class="field-input" id="bgc-submitted_date" type="date" /></div>
+            <div class="field"><label class="field-label">Completed Date</label><input class="field-input" id="bgc-completed_date" type="date" /></div>
+            <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="bgc-expiration_date" type="date" /></div>
+          </div>
+          <div class="status-row" style="margin-top:12px">
+            <span class="status-label">Youth Program Eligible</span>
+            <div class="toggle-wrap">
+              <div class="toggle" id="bgc-youth_eligible" onclick="toggleBgcYouth()"></div>
+              <span id="bgc-youth_eligible-label" style="font-size:12px;color:var(--muted)">No</span>
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px"><label class="field-label">Notes</label><textarea class="field-input" id="bgc-notes" rows="2"></textarea></div>
+          <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveBGC()">Save Background Check</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="drawer-actions">
+      <span class="save-indicator" id="drawer-save-indicator">✓ Saved</span>
+      <button class="btn-ghost" onclick="closeDrawer()">Close</button>
+      <button class="btn-primary" onclick="saveProfile()">Save Profile</button>
     </div>
   </div>
 

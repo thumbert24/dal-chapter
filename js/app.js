@@ -5,8 +5,8 @@
 ───────────────────────────────────────────────────────────────── */
 
 // ── CONFIG — paste your Supabase credentials here ──────────────
-const SUPABASE_URL  = 'https://eiiybwmmxfayuutjcinn.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_8tY5wk-zJNX1yjKBlW1-Mw_2TdKaFLE';
+const SUPABASE_URL  = 'https://your-project-ref.supabase.co';
+const SUPABASE_ANON = 'your-anon-key-here';
 
 // ── INIT ───────────────────────────────────────────────────────
 const { createClient } = supabase;
@@ -332,7 +332,7 @@ function renderMembers() {
       m.email_bounced ? badge('Email Bounce','amber') : '',
     ].filter(Boolean).join(' ');
     const meta = [m.city && m.state ? `${m.city}, ${m.state}` : '', m.employer ?? ''].filter(Boolean).join(' · ');
-    return `<div class="member-card" onclick='openMemberModal(${JSON.stringify(m)})'>
+    return `<div class="member-card" onclick='openDrawer(${JSON.stringify(m)})'>
       <div class="member-card-top">
         <div class="member-avatar">${ini}</div>
         <div style="flex:1;min-width:0">
@@ -751,4 +751,245 @@ function downloadCSV(filename, rows) {
   a.href     = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
+}
+
+// ── MEMBER DRAWER ──────────────────────────────────────────────
+let drawerMember   = null;
+let drawerTab      = 'profile';
+let drawerToggles  = { financial_standing: false, voting_eligible: false, email_bounced: false };
+let bgcYouth       = false;
+let existingCerts  = {};
+let existingBGC    = null;
+
+function openDrawer(member) {
+  drawerMember = member;
+  drawerTab    = 'profile';
+
+  const ini = ((member.first_name?.[0]??'')+(member.last_name?.[0]??'')).toUpperCase();
+  document.getElementById('drawer-avatar').textContent = ini;
+  document.getElementById('drawer-name').textContent   = `${member.first_name} ${member.last_name}`;
+  document.getElementById('drawer-email').textContent  = member.email_primary;
+
+  // Profile fields
+  const profileFields = ['first_name','last_name','email_primary','email_secondary','phone_mobile','phone_home','address_line1','address_line2','city','state','zip','employer','occupation','linkedin_url','member_number','chapter_initiated','initiated_date','membership_status','email_bounce_date','email_bounce_reason'];
+  profileFields.forEach(f => {
+    const el = document.getElementById('dp-' + f);
+    if (el) el.value = member[f] ?? '';
+  });
+
+  // Toggles
+  ['financial_standing','voting_eligible','email_bounced'].forEach(f => {
+    drawerToggles[f] = !!member[f];
+    setToggle(f, !!member[f]);
+  });
+
+  switchDrawerTab('profile');
+  loadDrawerFinancial();
+  loadDrawerCerts();
+  loadDrawerBGC();
+
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('member-drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('member-drawer').classList.remove('open');
+  drawerMember = null;
+}
+
+function switchDrawerTab(tab) {
+  drawerTab = tab;
+  document.querySelectorAll('.drawer-tab').forEach((b,i) => {
+    const tabs = ['profile','financial','certs','bgc'];
+    b.classList.toggle('active', tabs[i] === tab);
+  });
+  document.querySelectorAll('.drawer-tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('dtab-' + tab).classList.add('active');
+}
+
+function setToggle(field, val) {
+  const el  = document.getElementById('dp-' + field);
+  const lbl = document.getElementById('dp-' + field + '-label');
+  if (el)  el.classList.toggle('on', val);
+  if (lbl) lbl.textContent = val ? 'Yes' : 'No';
+}
+
+function toggleField(field) {
+  drawerToggles[field] = !drawerToggles[field];
+  setToggle(field, drawerToggles[field]);
+}
+
+function toggleBgcYouth() {
+  bgcYouth = !bgcYouth;
+  const el  = document.getElementById('bgc-youth_eligible');
+  const lbl = document.getElementById('bgc-youth_eligible-label');
+  if (el)  el.classList.toggle('on', bgcYouth);
+  if (lbl) lbl.textContent = bgcYouth ? 'Yes' : 'No';
+}
+
+function showSaved() {
+  const el = document.getElementById('drawer-save-indicator');
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── SAVE PROFILE ───────────────────────────────────────────────
+async function saveProfile() {
+  if (!drawerMember) return;
+  const data = {};
+  ['first_name','last_name','email_primary','email_secondary','phone_mobile','phone_home','address_line1','address_line2','city','state','zip','employer','occupation','linkedin_url','member_number','chapter_initiated','initiated_date','membership_status','email_bounce_date','email_bounce_reason'].forEach(f => {
+    const v = document.getElementById('dp-' + f)?.value?.trim();
+    data[f] = v || null;
+  });
+  data.financial_standing = drawerToggles.financial_standing;
+  data.voting_eligible    = drawerToggles.voting_eligible;
+  data.email_bounced      = drawerToggles.email_bounced;
+
+  const { error } = await sb.from('members').update(data).eq('id', drawerMember.id);
+  if (!error) { showSaved(); loadMembers(); }
+  else alert('Error saving: ' + error.message);
+}
+
+// ── FINANCIAL ──────────────────────────────────────────────────
+async function loadDrawerFinancial() {
+  if (!drawerMember) return;
+  const [{ data: dues }, { data: tax }] = await Promise.all([
+    sb.from('dues_payments').select('*').eq('member_id', drawerMember.id).order('created_at', { ascending: false }),
+    sb.from('grand_tax').select('*').eq('member_id', drawerMember.id).order('created_at', { ascending: false }),
+  ]);
+
+  const el = document.getElementById('fin-history');
+  if (!el) return;
+
+  const duesRows = (dues ?? []).map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(201,168,76,0.07);font-size:12px">
+      <span style="color:var(--muted)">${r.fiscal_year} ${r.term ?? ''}</span>
+      <span style="color:var(--text)">${fmtMoney(r.amount_paid)} / ${fmtMoney(r.amount_owed)}</span>
+      ${payBadge(r.payment_status)}
+    </div>`).join('');
+
+  const taxRows = (tax ?? []).map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(201,168,76,0.07);font-size:12px">
+      <span style="color:var(--muted)">Grand Tax ${r.fiscal_year}</span>
+      <span style="color:var(--text)">${fmtMoney(r.amount_paid)} / ${fmtMoney(r.amount_owed)}</span>
+      ${payBadge(r.payment_status)}
+    </div>`).join('');
+
+  el.innerHTML = (duesRows || taxRows)
+    ? `<div style="margin-bottom:8px;font-family:var(--fd);font-size:9px;color:var(--gold-dim);letter-spacing:.1em;text-transform:uppercase">Dues</div>${duesRows || '<p style="color:var(--dim);font-size:12px">None</p>'}
+       <div style="margin:12px 0 8px;font-family:var(--fd);font-size:9px;color:var(--gold-dim);letter-spacing:.1em;text-transform:uppercase">Grand Tax</div>${taxRows || '<p style="color:var(--dim);font-size:12px">None</p>'}`
+    : '<p style="color:var(--dim);font-size:12px">No payment records yet.</p>';
+}
+
+async function saveDues() {
+  if (!drawerMember) return;
+  const owed = parseFloat(document.getElementById('fin-amount_owed').value) || 0;
+  const paid = parseFloat(document.getElementById('fin-amount_paid').value) || 0;
+  const data = {
+    member_id:      drawerMember.id,
+    fiscal_year:    document.getElementById('fin-fiscal_year').value.trim() || '2024-25',
+    term:           document.getElementById('fin-term').value,
+    amount_owed:    owed,
+    amount_paid:    paid,
+    paid_date:      document.getElementById('fin-paid_date').value || null,
+    payment_method: document.getElementById('fin-payment_method').value || null,
+    payment_status: paid >= owed && owed > 0 ? 'paid' : paid > 0 ? 'partial' : 'outstanding',
+  };
+  const { error } = await sb.from('dues_payments').insert(data);
+  if (!error) { showSaved(); loadDrawerFinancial(); loadFinancial(); }
+  else alert('Error: ' + error.message);
+}
+
+async function saveGrandTax() {
+  if (!drawerMember) return;
+  const owed = parseFloat(document.getElementById('tax-amount_owed').value) || 0;
+  const paid = parseFloat(document.getElementById('tax-amount_paid').value) || 0;
+  const year = document.getElementById('tax-fiscal_year').value.trim() || '2024-25';
+  const data = {
+    member_id:           drawerMember.id,
+    fiscal_year:         year,
+    amount_owed:         owed,
+    amount_paid:         paid,
+    paid_date:           document.getElementById('tax-paid_date').value || null,
+    confirmation_number: document.getElementById('tax-confirmation_number').value.trim() || null,
+    payment_status:      paid >= owed && owed > 0 ? 'paid' : paid > 0 ? 'partial' : 'outstanding',
+  };
+  const { error } = await sb.from('grand_tax').upsert(data, { onConflict: 'member_id,fiscal_year' });
+  if (!error) { showSaved(); loadDrawerFinancial(); loadFinancial(); }
+  else alert('Error: ' + error.message);
+}
+
+// ── CERTIFICATIONS ─────────────────────────────────────────────
+async function loadDrawerCerts() {
+  if (!drawerMember) return;
+  const { data } = await sb.from('certifications').select('*').eq('member_id', drawerMember.id);
+  existingCerts = {};
+  (data ?? []).forEach(c => { existingCerts[c.cert_type] = c; });
+
+  ['imdp','risk_management','ritual_training'].forEach(type => {
+    const c = existingCerts[type];
+    const fields = ['status','provider','completed_date','expiration_date','certificate_number'];
+    fields.forEach(f => {
+      const el = document.getElementById(`cert-${type}-${f}`);
+      if (el) el.value = c?.[f] ?? (f === 'status' ? 'not_filed' : '');
+    });
+  });
+}
+
+async function saveCert(type) {
+  if (!drawerMember) return;
+  const fields = ['status','provider','completed_date','expiration_date','certificate_number'];
+  const data   = { member_id: drawerMember.id, cert_type: type };
+  fields.forEach(f => {
+    const v = document.getElementById(`cert-${type}-${f}`)?.value?.trim();
+    data[f] = v || null;
+  });
+  data.status = document.getElementById(`cert-${type}-status`)?.value ?? 'not_filed';
+
+  let error;
+  if (existingCerts[type]) {
+    ({ error } = await sb.from('certifications').update(data).eq('id', existingCerts[type].id));
+  } else {
+    ({ error } = await sb.from('certifications').insert(data));
+  }
+  if (!error) { showSaved(); loadDrawerCerts(); loadCompliance(); }
+  else alert('Error: ' + error.message);
+}
+
+// ── BACKGROUND CHECK ───────────────────────────────────────────
+async function loadDrawerBGC() {
+  if (!drawerMember) return;
+  const { data } = await sb.from('background_checks').select('*').eq('member_id', drawerMember.id).order('created_at', { ascending: false }).limit(1);
+  existingBGC = data?.[0] ?? null;
+  const b = existingBGC;
+  ['status','result','provider','submitted_date','completed_date','expiration_date','notes'].forEach(f => {
+    const el = document.getElementById('bgc-' + f);
+    if (el) el.value = b?.[f] ?? '';
+  });
+  bgcYouth = !!b?.youth_eligible;
+  const el  = document.getElementById('bgc-youth_eligible');
+  const lbl = document.getElementById('bgc-youth_eligible-label');
+  if (el)  el.classList.toggle('on', bgcYouth);
+  if (lbl) lbl.textContent = bgcYouth ? 'Yes' : 'No';
+}
+
+async function saveBGC() {
+  if (!drawerMember) return;
+  const data = { member_id: drawerMember.id };
+  ['status','result','provider','submitted_date','completed_date','expiration_date','notes'].forEach(f => {
+    const v = document.getElementById('bgc-' + f)?.value?.trim();
+    data[f] = v || null;
+  });
+  data.youth_eligible = bgcYouth;
+  data.status = document.getElementById('bgc-status')?.value ?? 'not_filed';
+
+  let error;
+  if (existingBGC) {
+    ({ error } = await sb.from('background_checks').update(data).eq('id', existingBGC.id));
+  } else {
+    ({ error } = await sb.from('background_checks').insert(data));
+  }
+  if (!error) { showSaved(); loadDrawerBGC(); loadCompliance(); }
+  else alert('Error: ' + error.message);
 }
