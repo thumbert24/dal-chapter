@@ -8,6 +8,7 @@
 const SUPABASE_URL  = 'https://eiiybwmmxfayuutjcinn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpaXlid21teGZheXV1dGpjaW5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDcyNzEsImV4cCI6MjA5NjA4MzI3MX0.TfYFylax6MQE6igsmxwQUKiWvClaCkxbnFq1nU56RQU';
 
+
 // ── INIT ───────────────────────────────────────────────────────
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -787,6 +788,7 @@ function openDrawer(member) {
   loadDrawerFinancial();
   loadDrawerCerts();
   loadDrawerBGC();
+  refreshRoles();
 
   document.getElementById('drawer-overlay').classList.add('open');
   document.getElementById('member-drawer').classList.add('open');
@@ -801,11 +803,12 @@ function closeDrawer() {
 function switchDrawerTab(tab) {
   drawerTab = tab;
   document.querySelectorAll('.drawer-tab').forEach((b,i) => {
-    const tabs = ['profile','financial','certs','bgc'];
+    const tabs = ['profile','financial','certs','leadership','bgc'];
     b.classList.toggle('active', tabs[i] === tab);
   });
   document.querySelectorAll('.drawer-tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('dtab-' + tab).classList.add('active');
+  if (tab === 'leadership') loadDrawerLeadership();
 }
 
 function setToggle(field, val) {
@@ -991,5 +994,251 @@ async function saveBGC() {
     ({ error } = await sb.from('background_checks').insert(data));
   }
   if (!error) { showSaved(); loadDrawerBGC(); loadCompliance(); }
+  else alert('Error: ' + error.message);
+}
+
+// ── LEADERSHIP TAB ─────────────────────────────────────────────
+let allRoles = [];
+
+async function loadDrawerLeadership() {
+  if (!drawerMember) return;
+
+  // Load available roles into select
+  if (!allRoles.length) await refreshRoles();
+
+  // Load this member's role history
+  const { data } = await sb
+    .from('member_roles')
+    .select('*, leadership_roles(role_name, role_type, committee_name, is_exec_board)')
+    .eq('member_id', drawerMember.id)
+    .order('term_year', { ascending: false });
+
+  const el = document.getElementById('member-roles-list');
+  if (!data?.length) {
+    el.innerHTML = '<p style="color:var(--dim);font-size:12px;padding:8px 0">No roles assigned yet.</p>';
+    return;
+  }
+
+  el.innerHTML = data.map(r => {
+    const lr      = r.leadership_roles;
+    const current = r.is_current;
+    return `<div style="background:var(--surf2);border:1px solid var(--gold-border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <div>
+        <div style="font-family:var(--fd);font-size:11px;color:var(--gold);margin-bottom:3px">${lr?.role_name ?? '—'}</div>
+        <div style="font-size:11px;color:var(--muted)">${lr?.committee_name ? lr.committee_name + ' · ' : ''}${r.term_year ?? ''}${r.start_date ? ' · ' + new Date(r.start_date).toLocaleDateString() : ''}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        ${current ? badge('Current','green') : badge('Past','dim')}
+        <button onclick="removeRole('${r.id}')" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function refreshRoles() {
+  const { data } = await sb.from('leadership_roles').select('*').eq('is_active', true).order('role_name');
+  allRoles = data ?? [];
+  const sel = document.getElementById('role-role_id');
+  if (sel) {
+    sel.innerHTML = '<option value="">Select position…</option>' +
+      allRoles.map(r => `<option value="${r.id}">${r.role_name}${r.committee_name ? ' — ' + r.committee_name : ''}</option>`).join('');
+  }
+}
+
+async function saveRole() {
+  if (!drawerMember) return;
+  const roleId = document.getElementById('role-role_id')?.value;
+  if (!roleId) { alert('Please select a position.'); return; }
+
+  const isCurrent = document.getElementById('role-is_current')?.value === 'true';
+
+  // If marking as current, set all previous roles for this member to not current
+  if (isCurrent) {
+    await sb.from('member_roles').update({ is_current: false }).eq('member_id', drawerMember.id);
+  }
+
+  const data = {
+    member_id:  drawerMember.id,
+    role_id:    roleId,
+    term_year:  document.getElementById('role-term_year')?.value?.trim() || null,
+    start_date: document.getElementById('role-start_date')?.value || null,
+    end_date:   document.getElementById('role-end_date')?.value   || null,
+    is_current: isCurrent,
+  };
+
+  const { error } = await sb.from('member_roles').insert(data);
+  if (!error) {
+    showSaved();
+    // Clear fields
+    ['role-term_year','role-start_date','role-end_date'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('role-role_id').value = '';
+    loadDrawerLeadership();
+    loadLeadership();
+  } else {
+    alert('Error: ' + error.message);
+  }
+}
+
+async function removeRole(id) {
+  if (!confirm('Remove this role assignment?')) return;
+  const { error } = await sb.from('member_roles').delete().eq('id', id);
+  if (!error) { showSaved(); loadDrawerLeadership(); loadLeadership(); }
+  else alert('Error: ' + error.message);
+}
+
+// ── ROLE MANAGER MODAL ─────────────────────────────────────────
+async function openRoleManagerModal() {
+  document.getElementById('role-manager-modal').style.display = 'flex';
+  loadAllRolesList();
+}
+
+async function loadAllRolesList() {
+  const { data } = await sb.from('leadership_roles').select('*').order('role_name');
+  const el = document.getElementById('all-roles-list');
+  if (!data?.length) { el.innerHTML = '<p style="color:var(--dim);font-size:12px">No positions defined yet.</p>'; return; }
+  el.innerHTML = data.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(201,168,76,0.07);font-size:13px">
+      <div>
+        <span style="color:var(--text)">${r.role_name}</span>
+        ${r.committee_name ? `<span style="color:var(--muted);font-size:11px"> — ${r.committee_name}</span>` : ''}
+        <span style="margin-left:8px">${badge(r.role_type.replace(/_/g,' '), r.is_exec_board ? 'gold' : 'dim')}</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        ${badge(r.is_active ? 'Active' : 'Inactive', r.is_active ? 'green' : 'dim')}
+        <button onclick="toggleRoleActive('${r.id}',${r.is_active})" style="background:none;border:1px solid var(--gold-border);color:var(--muted);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">${r.is_active ? 'Deactivate' : 'Activate'}</button>
+      </div>
+    </div>`).join('');
+}
+
+async function saveNewRole() {
+  const name = document.getElementById('nr-role_name')?.value?.trim();
+  if (!name) { alert('Position name is required.'); return; }
+  const data = {
+    role_name:    name,
+    role_type:    document.getElementById('nr-role_type')?.value ?? 'committee_chair',
+    committee_name: document.getElementById('nr-committee_name')?.value?.trim() || null,
+    is_exec_board: document.getElementById('nr-is_exec_board')?.value === 'true',
+    description:  document.getElementById('nr-description')?.value?.trim() || null,
+    is_active:    true,
+  };
+  const { error } = await sb.from('leadership_roles').insert(data);
+  if (!error) {
+    ['nr-role_name','nr-committee_name','nr-description'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    allRoles = []; // force refresh
+    await refreshRoles();
+    loadAllRolesList();
+  } else alert('Error: ' + error.message);
+}
+
+async function toggleRoleActive(id, current) {
+  await sb.from('leadership_roles').update({ is_active: !current }).eq('id', id);
+  allRoles = [];
+  await refreshRoles();
+  loadAllRolesList();
+}
+
+// ── UPDATED CERT SAVE (with year_valid in notes field) ─────────
+// Extend existing saveCert to include year_valid stored in notes
+const _origSaveCert = saveCert;
+// Override saveCert to include year_valid
+async function saveCert(type) {
+  if (!drawerMember) return;
+  const fields = ['status','provider','completed_date','expiration_date','certificate_number'];
+  const data   = { member_id: drawerMember.id, cert_type: type };
+  fields.forEach(f => {
+    const v = document.getElementById(`cert-${type}-${f}`)?.value?.trim();
+    data[f] = v || null;
+  });
+  data.status = document.getElementById(`cert-${type}-status`)?.value ?? 'not_filed';
+  // Store year_valid in notes field (prefixed so it's parseable)
+  const yearVal = document.getElementById(`cert-${type}-year_valid`)?.value?.trim();
+  if (yearVal) data.notes = `year_valid:${yearVal}`;
+
+  let error;
+  if (existingCerts[type]) {
+    ({ error } = await sb.from('certifications').update(data).eq('id', existingCerts[type].id));
+  } else {
+    ({ error } = await sb.from('certifications').insert(data));
+  }
+  if (!error) { showSaved(); loadDrawerCerts(); loadCompliance(); }
+  else alert('Error: ' + error.message);
+}
+
+// Update loadDrawerCerts to also load year_valid
+const _origLoadCerts = loadDrawerCerts;
+async function loadDrawerCerts() {
+  if (!drawerMember) return;
+  const { data } = await sb.from('certifications').select('*').eq('member_id', drawerMember.id);
+  existingCerts = {};
+  (data ?? []).forEach(c => { existingCerts[c.cert_type] = c; });
+
+  ['imdp','risk_management','ritual_training'].forEach(type => {
+    const c = existingCerts[type];
+    ['status','provider','completed_date','expiration_date','certificate_number'].forEach(f => {
+      const el = document.getElementById(`cert-${type}-${f}`);
+      if (el) el.value = c?.[f] ?? (f === 'status' ? 'not_filed' : '');
+    });
+    // Parse year_valid from notes
+    const yrEl = document.getElementById(`cert-${type}-year_valid`);
+    if (yrEl && c?.notes?.startsWith('year_valid:')) {
+      yrEl.value = c.notes.replace('year_valid:', '');
+    } else if (yrEl) {
+      yrEl.value = '';
+    }
+  });
+
+  // Render extra certs
+  const extra = Object.values(existingCerts).filter(c => c.cert_type === 'other');
+  const extraEl = document.getElementById('extra-certs-list');
+  if (extraEl && extra.length) {
+    extraEl.innerHTML = extra.map(c => `
+      <div class="cert-card" style="border-color:var(--blue)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="cert-card-title" style="margin-bottom:0">${c.certificate_number ?? 'Other Cert'}</div>
+          <button onclick="deleteCert('${c.id}')" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Remove</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--muted)">
+          <span>Status: ${badge(c.status ?? 'not_filed', c.status === 'current' ? 'green' : 'dim')}</span>
+          <span>Year: ${c.notes?.startsWith('year_valid:') ? c.notes.replace('year_valid:','') : '—'}</span>
+          <span>Completed: ${c.completed_date ? new Date(c.completed_date).toLocaleDateString() : '—'}</span>
+          <span>Expires: ${c.expiration_date ? new Date(c.expiration_date).toLocaleDateString() : '—'}</span>
+        </div>
+      </div>`).join('');
+  } else if (extraEl) {
+    extraEl.innerHTML = '';
+  }
+}
+
+async function saveNewCert() {
+  if (!drawerMember) return;
+  const name = document.getElementById('new-cert-name')?.value?.trim();
+  if (!name) { alert('Certification name is required.'); return; }
+  const yearVal = document.getElementById('new-cert-year_valid')?.value?.trim();
+  const data = {
+    member_id:        drawerMember.id,
+    cert_type:        'other',
+    status:           document.getElementById('new-cert-status')?.value ?? 'current',
+    provider:         document.getElementById('new-cert-provider')?.value?.trim() || null,
+    completed_date:   document.getElementById('new-cert-completed_date')?.value || null,
+    expiration_date:  document.getElementById('new-cert-expiration_date')?.value || null,
+    certificate_number: name, // store name in certificate_number field
+    notes:            yearVal ? `year_valid:${yearVal}` : null,
+  };
+  const { error } = await sb.from('certifications').insert(data);
+  if (!error) {
+    showSaved();
+    ['new-cert-name','new-cert-year_valid','new-cert-completed_date','new-cert-expiration_date','new-cert-provider'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    loadDrawerCerts();
+  } else alert('Error: ' + error.message);
+}
+
+async function deleteCert(id) {
+  if (!confirm('Remove this certification?')) return;
+  const { error } = await sb.from('certifications').delete().eq('id', id);
+  if (!error) { showSaved(); loadDrawerCerts(); }
   else alert('Error: ' + error.message);
 }
