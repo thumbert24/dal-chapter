@@ -8,7 +8,6 @@
 const SUPABASE_URL  = 'https://eiiybwmmxfayuutjcinn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpaXlid21teGZheXV1dGpjaW5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDcyNzEsImV4cCI6MjA5NjA4MzI3MX0.TfYFylax6MQE6igsmxwQUKiWvClaCkxbnFq1nU56RQU';
 
-
 // ── INIT ───────────────────────────────────────────────────────
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -509,31 +508,213 @@ function exportFinancial() {
 }
 
 // ── LEADERSHIP ─────────────────────────────────────────────────
+let allTermYears   = [];
+let activeTerm     = null;
+
 async function loadLeadership() {
-  const { data } = await sb.from('v_leadership_roster').select('*');
-  const rows     = data ?? [];
-  const exec     = rows.filter(r => r.is_exec_board);
-  const comm     = rows.filter(r => !r.is_exec_board);
+  // Load all distinct term years from member_roles
+  const { data: termData } = await sb
+    .from('member_roles')
+    .select('term_year')
+    .not('term_year', 'is', null)
+    .order('term_year', { ascending: false });
 
+  const terms = [...new Set((termData ?? []).map(r => r.term_year).filter(Boolean))];
+  allTermYears = terms;
+
+  // Default to most recent or first available
+  if (!activeTerm || !terms.includes(activeTerm)) {
+    activeTerm = terms[0] ?? null;
+  }
+
+  renderTermTabs();
+  await loadBoardForTerm(activeTerm);
+}
+
+function renderTermTabs() {
+  const row = document.getElementById('term-tab-row');
+  if (!row) return;
+  if (!allTermYears.length) {
+    row.innerHTML = '<span style="font-size:12px;color:var(--dim)">No terms yet — assign a position to create one.</span>';
+    return;
+  }
+  row.innerHTML = allTermYears.map(t =>
+    `<button class="term-tab ${t === activeTerm ? 'active' : ''}" onclick="switchTerm('${t}')">${t}</button>`
+  ).join('');
+}
+
+async function switchTerm(term) {
+  activeTerm = term;
+  renderTermTabs();
+  await loadBoardForTerm(term);
+}
+
+async function loadBoardForTerm(term) {
+  const isCurrent = term === allTermYears[0]; // most recent = current
+
+  // Fetch all roles for this term
+  let query = sb
+    .from('member_roles')
+    .select('*, members(first_name, last_name, email_primary, phone_mobile), leadership_roles(role_name, role_type, committee_name, is_exec_board)')
+    .order('is_current', { ascending: false });
+
+  if (term) {
+    query = query.eq('term_year', term);
+  } else {
+    query = query.eq('is_current', true);
+  }
+
+  const { data } = await query;
+  const rows = data ?? [];
+  const exec = rows.filter(r => r.leadership_roles?.is_exec_board);
+  const comm = rows.filter(r => !r.leadership_roles?.is_exec_board);
+
+  // Stats
   document.getElementById('leadership-stats').innerHTML =
-    statCard('Exec Board Seats',  exec.length,             'Currently filled',   'good') +
-    statCard('Committee Chairs',  comm.length,             'Active committees') +
-    statCard('Total Roles',       rows.length,             'Current term') +
-    statCard('Board Vacancies',   Math.max(0,12-exec.length), 'Open positions', exec.length < 12 ? 'warn' : 'good');
+    statCard('Exec Board',     exec.length,  term ? `${term} term` : 'Currently filled',  exec.length > 0 ? 'good' : 'warn') +
+    statCard('Committee',      comm.length,  'Chairs assigned') +
+    statCard('Total Roles',    rows.length,  'This term') +
+    statCard('Vacancies',      Math.max(0, 12 - exec.length), 'Board positions open', exec.length < 12 ? 'warn' : 'good');
 
-  document.getElementById('exec-tbody').innerHTML = !exec.length ? emptyRow(4,'No exec board assignments found.') : exec.map(r => `<tr>
-    <td>${badge(r.role_name,'gold')}</td>
-    <td>${r.brother_name}</td>
-    <td style="color:var(--muted);font-size:12px">${r.email_primary}</td>
-    <td>${r.term_year ?? '—'}</td>
-  </tr>`).join('');
+  // Section titles
+  const termLabel = term ? ` — ${term}` : '';
+  const el1 = document.getElementById('exec-section-title');
+  const el2 = document.getElementById('committee-section-title');
+  if (el1) el1.textContent = `Executive Board${termLabel}`;
+  if (el2) el2.textContent = `Committee Chairs${termLabel}`;
 
-  document.getElementById('committee-tbody').innerHTML = !comm.length ? emptyRow(4,'No committee assignments found.') : comm.map(r => `<tr>
-    <td>${r.committee_name ?? r.role_name}</td>
-    <td>${r.brother_name}</td>
-    <td style="color:var(--muted);font-size:12px">${r.email_primary}</td>
-    <td>${r.term_year ?? '—'}</td>
-  </tr>`).join('');
+  // Exec table
+  document.getElementById('exec-tbody').innerHTML = !exec.length
+    ? emptyRow(8, term ? `No exec board recorded for ${term}.` : 'No current exec board assignments.')
+    : exec.map(r => {
+        const m  = r.members;
+        const lr = r.leadership_roles;
+        return `<tr>
+          <td>${badge(lr?.role_name ?? '—', 'gold')}</td>
+          <td>${badge(lr?.role_type?.replace(/_/g,' ') ?? '—', lr?.is_exec_board ? 'gold' : 'dim')}</td>
+          <td>${m ? m.first_name + ' ' + m.last_name : '—'}</td>
+          <td style="color:var(--muted);font-size:12px">${m?.email_primary ?? '—'}</td>
+          <td style="color:var(--muted);font-size:12px">${m?.phone_mobile ?? '—'}</td>
+          <td>${r.term_year ?? '—'}</td>
+          <td>${r.start_date ? new Date(r.start_date).toLocaleDateString() : '—'}</td>
+          <td>
+            <button onclick="removeRoleAssignment('${r.id}')" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Remove</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+  // Committee table
+  document.getElementById('committee-tbody').innerHTML = !comm.length
+    ? emptyRow(6, term ? `No committees recorded for ${term}.` : 'No current committee assignments.')
+    : comm.map(r => {
+        const m  = r.members;
+        const lr = r.leadership_roles;
+        return `<tr>
+          <td>${lr?.committee_name ?? lr?.role_name ?? '—'}</td>
+          <td>${m ? m.first_name + ' ' + m.last_name : '—'}</td>
+          <td style="color:var(--muted);font-size:12px">${m?.email_primary ?? '—'}</td>
+          <td>${r.term_year ?? '—'}</td>
+          <td>${r.start_date ? new Date(r.start_date).toLocaleDateString() : '—'}</td>
+          <td>
+            <button onclick="removeRoleAssignment('${r.id}')" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Remove</button>
+          </td>
+        </tr>`;
+      }).join('');
+}
+
+async function removeRoleAssignment(id) {
+  if (!confirm('Remove this position assignment?')) return;
+  const { error } = await sb.from('member_roles').delete().eq('id', id);
+  if (!error) loadLeadership();
+  else alert('Error: ' + error.message);
+}
+
+// ── ASSIGN BOARD MODAL ─────────────────────────────────────────
+async function openAssignBoardModal() {
+  // Populate brothers dropdown
+  const { data: members } = await sb.from('members').select('id,first_name,last_name').eq('membership_status','active').order('last_name');
+  const mSel = document.getElementById('ab-member_id');
+  mSel.innerHTML = '<option value="">Select brother…</option>' +
+    (members ?? []).map(m => `<option value="${m.id}">${m.first_name} ${m.last_name}</option>`).join('');
+
+  // Populate roles dropdown
+  if (!allRoles.length) await refreshRoles();
+  const rSel = document.getElementById('ab-role_id');
+  rSel.innerHTML = '<option value="">Select position…</option>' +
+    allRoles.map(r => `<option value="${r.id}">${r.role_name}${r.committee_name ? ' — ' + r.committee_name : ''}</option>`).join('');
+
+  // Populate term years dropdown
+  const tSel = document.getElementById('ab-term_year');
+  const currentYear = new Date().getFullYear();
+  const yearOptions = allTermYears.length
+    ? allTermYears
+    : [`${currentYear}-${String(currentYear+1).slice(-2)}`, `${currentYear-1}-${String(currentYear).slice(-2)}`];
+
+  tSel.innerHTML = '<option value="">Select term…</option>' +
+    yearOptions.map(y => `<option value="${y}" ${y === activeTerm ? 'selected' : ''}>${y}</option>`).join('') +
+    `<option value="__new__">+ Enter new term year</option>`;
+
+  document.getElementById('assign-board-error').style.display = 'none';
+  document.getElementById('assign-board-modal').style.display = 'flex';
+}
+
+async function saveAssignBoard() {
+  const errEl    = document.getElementById('assign-board-error');
+  errEl.style.display = 'none';
+
+  const memberId = document.getElementById('ab-member_id')?.value;
+  const roleId   = document.getElementById('ab-role_id')?.value;
+  let   termYear = document.getElementById('ab-term_year')?.value;
+  const isCurrent = document.getElementById('ab-is_current')?.value === 'true';
+
+  if (!memberId) { errEl.textContent = 'Please select a brother.'; errEl.style.display='block'; return; }
+  if (!roleId)   { errEl.textContent = 'Please select a position.'; errEl.style.display='block'; return; }
+
+  if (termYear === '__new__') {
+    termYear = prompt('Enter term year (e.g. 2024-25):');
+    if (!termYear) return;
+    termYear = termYear.trim();
+  }
+
+  if (!termYear) { errEl.textContent = 'Please select or enter a term year.'; errEl.style.display='block'; return; }
+
+  // If marking current, unmark others for same role
+  if (isCurrent) {
+    await sb.from('member_roles').update({ is_current: false }).eq('role_id', roleId).eq('is_current', true);
+  }
+
+  const data = {
+    member_id:  memberId,
+    role_id:    roleId,
+    term_year:  termYear,
+    start_date: document.getElementById('ab-start_date')?.value || null,
+    end_date:   document.getElementById('ab-end_date')?.value   || null,
+    is_current: isCurrent,
+  };
+
+  const { error } = await sb.from('member_roles').insert(data);
+  if (error) { errEl.textContent = error.message; errEl.style.display='block'; return; }
+
+  closeModal('assign-board-modal');
+  loadLeadership();
+}
+
+// ── TERM YEAR MODAL ────────────────────────────────────────────
+function openTermYearModal() {
+  document.getElementById('new-term-year').value = '';
+  document.getElementById('term-year-modal').style.display = 'flex';
+}
+
+function addTermYear() {
+  const val = document.getElementById('new-term-year')?.value?.trim();
+  if (!val) { alert('Please enter a term year.'); return; }
+  if (!allTermYears.includes(val)) {
+    allTermYears.unshift(val);
+  }
+  activeTerm = val;
+  renderTermTabs();
+  closeModal('term-year-modal');
+  loadBoardForTerm(val);
 }
 
 // ── EVENTS ─────────────────────────────────────────────────────

@@ -402,3 +402,18 @@ textarea.field-input { resize: vertical; min-height: 70px; }
   letter-spacing: 0.08em; opacity: 0; transition: opacity .3s;
 }
 .save-indicator.show { opacity: 1; }
+
+/* ── BOARD TABS ───────────────────────────────────────────────── */
+.board-tabs {
+  background: var(--surf2); border: 1px solid var(--gold-border);
+  border-radius: var(--r); padding: 10px 14px; margin-bottom: 1.25rem;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.term-tab {
+  padding: 5px 14px; background: var(--surf3); border: 1px solid var(--gold-border);
+  border-radius: var(--r); color: var(--muted); font-family: var(--fd);
+  font-size: 10px; letter-spacing: 0.1em; cursor: pointer; transition: all .15s;
+  text-transform: uppercase;
+}
+.term-tab:hover  { color: var(--gold); border-color: var(--gold-bright); }
+.term-tab.active { color: var(--gold); background: var(--gold-sub); border-color: var(--gold-bright); }

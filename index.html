@@ -211,19 +211,42 @@
 
         <!-- LEADERSHIP -->
         <div class="panel" id="panel-leadership">
-          <div class="page-title"><h2>Leadership</h2><p>Executive Board and committees — FY 2024–25</p></div>
+          <div class="page-title-row">
+            <div>
+              <h2>Leadership</h2>
+              <p>Executive Board and committee assignments</p>
+            </div>
+            <button class="btn-primary" onclick="openAssignBoardModal()">+ Assign Position</button>
+          </div>
+
+          <!-- Board selector tabs -->
+          <div class="board-tabs">
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+              <span style="font-family:var(--fd);font-size:9px;letter-spacing:.12em;color:var(--gold-dim);margin-right:4px;text-transform:uppercase">Term Year:</span>
+              <div id="term-tab-row" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+              <button class="filter-btn" style="margin-left:4px" onclick="openTermYearModal()">+ Add Term</button>
+            </div>
+          </div>
+
           <div class="stats-row" id="leadership-stats"></div>
-          <div class="section-hdr"><span class="section-title">Executive Board</span></div>
+
+          <!-- Current board -->
+          <div class="section-hdr">
+            <span class="section-title" id="exec-section-title">Executive Board</span>
+          </div>
           <div class="table-wrap" style="margin-bottom:1.5rem">
             <table class="data-table">
-              <thead><tr><th>Position</th><th>Brother</th><th>Email</th><th>Term</th></tr></thead>
+              <thead><tr><th>Position</th><th>Type</th><th>Brother</th><th>Email</th><th>Phone</th><th>Term</th><th>Since</th><th></th></tr></thead>
               <tbody id="exec-tbody"></tbody>
             </table>
           </div>
-          <div class="section-hdr"><span class="section-title">Committee Chairs</span></div>
+
+          <div class="section-hdr">
+            <span class="section-title" id="committee-section-title">Committee Chairs</span>
+          </div>
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>Committee</th><th>Chair</th><th>Email</th><th>Term</th></tr></thead>
+              <thead><tr><th>Committee</th><th>Chair</th><th>Email</th><th>Term</th><th>Since</th><th></th></tr></thead>
               <tbody id="committee-tbody"></tbody>
             </table>
           </div>
@@ -453,8 +476,9 @@
     <div class="drawer-tabs">
       <button class="drawer-tab active" onclick="switchDrawerTab('profile')">Profile</button>
       <button class="drawer-tab"        onclick="switchDrawerTab('financial')">Financial</button>
-      <button class="drawer-tab"        onclick="switchDrawerTab('certs')">Certifications</button>
-      <button class="drawer-tab"        onclick="switchDrawerTab('bgc')">Background Check</button>
+      <button class="drawer-tab"        onclick="switchDrawerTab('certs')">Certs</button>
+      <button class="drawer-tab"        onclick="switchDrawerTab('leadership')">Leadership</button>
+      <button class="drawer-tab"        onclick="switchDrawerTab('bgc')">BGC</button>
     </div>
 
     <div class="drawer-body">
@@ -591,7 +615,9 @@
 
       <!-- CERTIFICATIONS TAB -->
       <div class="drawer-tab-content" id="dtab-certs">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6">Update the status and dates for each certification. Changes are saved when you click Save on each card.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <p style="font-size:12px;color:var(--muted);line-height:1.6">Status and dates for each certification. Add custom certs below.</p>
+        </div>
 
         <div class="cert-card" id="cert-card-imdp">
           <div class="cert-card-title">IMDP</div>
@@ -605,10 +631,11 @@
                 <option value="waived">Waived</option>
               </select>
             </div>
-            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-imdp-provider" /></div>
+            <div class="field"><label class="field-label">Year Valid</label><input class="field-input" id="cert-imdp-year_valid" placeholder="e.g. 2024" maxlength="4" /></div>
             <div class="field"><label class="field-label">Completed Date</label><input class="field-input" id="cert-imdp-completed_date" type="date" /></div>
             <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="cert-imdp-expiration_date" type="date" /></div>
-            <div class="field" style="grid-column:1/-1"><label class="field-label">Certificate #</label><input class="field-input" id="cert-imdp-certificate_number" /></div>
+            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-imdp-provider" /></div>
+            <div class="field"><label class="field-label">Certificate #</label><input class="field-input" id="cert-imdp-certificate_number" /></div>
           </div>
           <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveCert('imdp')">Save IMDP</button>
         </div>
@@ -625,10 +652,11 @@
                 <option value="waived">Waived</option>
               </select>
             </div>
-            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-risk_management-provider" /></div>
+            <div class="field"><label class="field-label">Year Valid</label><input class="field-input" id="cert-risk_management-year_valid" placeholder="e.g. 2024" maxlength="4" /></div>
             <div class="field"><label class="field-label">Completed Date</label><input class="field-input" id="cert-risk_management-completed_date" type="date" /></div>
             <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="cert-risk_management-expiration_date" type="date" /></div>
-            <div class="field" style="grid-column:1/-1"><label class="field-label">Certificate #</label><input class="field-input" id="cert-risk_management-certificate_number" /></div>
+            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-risk_management-provider" /></div>
+            <div class="field"><label class="field-label">Certificate #</label><input class="field-input" id="cert-risk_management-certificate_number" /></div>
           </div>
           <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveCert('risk_management')">Save Risk Mgmt</button>
         </div>
@@ -645,12 +673,78 @@
                 <option value="waived">Waived</option>
               </select>
             </div>
-            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-ritual_training-provider" /></div>
+            <div class="field"><label class="field-label">Year Valid</label><input class="field-input" id="cert-ritual_training-year_valid" placeholder="e.g. 2024" maxlength="4" /></div>
             <div class="field"><label class="field-label">Completed Date</label><input class="field-input" id="cert-ritual_training-completed_date" type="date" /></div>
             <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="cert-ritual_training-expiration_date" type="date" /></div>
-            <div class="field" style="grid-column:1/-1"><label class="field-label">Certificate #</label><input class="field-input" id="cert-ritual_training-certificate_number" /></div>
+            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="cert-ritual_training-provider" /></div>
+            <div class="field"><label class="field-label">Certificate #</label><input class="field-input" id="cert-ritual_training-certificate_number" /></div>
           </div>
           <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveCert('ritual_training')">Save Ritual</button>
+        </div>
+
+        <!-- Custom / additional certs -->
+        <div id="extra-certs-list"></div>
+
+        <div class="cert-card" style="border-style:dashed">
+          <div class="cert-card-title">+ Add Other Certification</div>
+          <div class="cert-fields">
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Certification Name *</label><input class="field-input" id="new-cert-name" placeholder="e.g. First Aid, CPR, LEAD..." /></div>
+            <div class="field"><label class="field-label">Status</label>
+              <select class="field-input" id="new-cert-status">
+                <option value="current">Current</option>
+                <option value="pending">Pending</option>
+                <option value="not_filed">Not Filed</option>
+                <option value="expired">Expired</option>
+                <option value="waived">Waived</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Year Valid</label><input class="field-input" id="new-cert-year_valid" placeholder="e.g. 2024" maxlength="4" /></div>
+            <div class="field"><label class="field-label">Completed Date</label><input class="field-input" id="new-cert-completed_date" type="date" /></div>
+            <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="new-cert-expiration_date" type="date" /></div>
+            <div class="field"><label class="field-label">Provider</label><input class="field-input" id="new-cert-provider" /></div>
+          </div>
+          <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveNewCert()">Add Certification</button>
+        </div>
+      </div>
+
+      <!-- LEADERSHIP TAB -->
+      <div class="drawer-tab-content" id="dtab-leadership">
+        <div class="drawer-section">
+          <div class="drawer-section-title">Current & Past Roles</div>
+          <div id="member-roles-list"><p style="color:var(--dim);font-size:12px">Loading…</p></div>
+        </div>
+
+        <div class="drawer-section">
+          <div class="cert-card">
+            <div class="cert-card-title">Assign Role</div>
+            <div class="cert-fields">
+              <div class="field" style="grid-column:1/-1">
+                <label class="field-label">Position *</label>
+                <select class="field-input" id="role-role_id">
+                  <option value="">Loading roles…</option>
+                </select>
+              </div>
+              <div class="field"><label class="field-label">Term Year</label><input class="field-input" id="role-term_year" placeholder="e.g. 2024-25" /></div>
+              <div class="field"><label class="field-label">Start Date</label><input class="field-input" id="role-start_date" type="date" /></div>
+              <div class="field"><label class="field-label">End Date</label><input class="field-input" id="role-end_date" type="date" /></div>
+              <div class="field">
+                <label class="field-label">Current Role?</label>
+                <select class="field-input" id="role-is_current">
+                  <option value="true">Yes — Currently Serving</option>
+                  <option value="false">No — Historical</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-primary" style="margin-top:10px;width:100%" onclick="saveRole()">Assign Role</button>
+          </div>
+        </div>
+
+        <div class="drawer-section">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="drawer-section-title" style="margin-bottom:0">Manage Available Positions</div>
+            <button class="btn-secondary" style="padding:5px 10px;font-size:9px" onclick="openRoleManagerModal()">+ New Position</button>
+          </div>
+          <p style="font-size:12px;color:var(--muted)">Add new exec board positions or committee chairs that can be assigned to any brother.</p>
         </div>
       </div>
 
@@ -694,12 +788,126 @@
         </div>
       </div>
 
-    </div>
-
     <div class="drawer-actions">
       <span class="save-indicator" id="drawer-save-indicator">✓ Saved</span>
       <button class="btn-ghost" onclick="closeDrawer()">Close</button>
       <button class="btn-primary" onclick="saveProfile()">Save Profile</button>
+    </div>
+  </div>
+
+  <!-- ── ASSIGN BOARD POSITION MODAL ─────────────────────────── -->
+  <div class="modal-overlay" id="assign-board-modal" style="display:none" onclick="closeModal('assign-board-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title" id="assign-board-modal-title">Assign Board Position</span>
+        <button class="modal-close" onclick="closeModal('assign-board-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1">
+            <label class="field-label">Brother *</label>
+            <select class="field-input" id="ab-member_id">
+              <option value="">Select brother…</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label class="field-label">Position *</label>
+            <select class="field-input" id="ab-role_id">
+              <option value="">Select position…</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Term Year *</label>
+            <select class="field-input" id="ab-term_year">
+              <option value="">Select term…</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Start Date</label>
+            <input class="field-input" id="ab-start_date" type="date" />
+          </div>
+          <div class="field">
+            <label class="field-label">End Date</label>
+            <input class="field-input" id="ab-end_date" type="date" />
+          </div>
+          <div class="field">
+            <label class="field-label">Status</label>
+            <select class="field-input" id="ab-is_current">
+              <option value="true">Current — Serving Now</option>
+              <option value="false">Historical — Past Role</option>
+            </select>
+          </div>
+        </div>
+        <div id="assign-board-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('assign-board-modal')">Cancel</button>
+          <button class="btn-primary" onclick="saveAssignBoard()">Assign Position</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TERM YEAR MODAL ────────────────────────────────────────── -->
+  <div class="modal-overlay" id="term-year-modal" style="display:none" onclick="closeModal('term-year-modal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+      <div class="modal-header">
+        <span class="modal-title">Add Term Year</span>
+        <button class="modal-close" onclick="closeModal('term-year-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Add a term year to the board history. Use the format <strong style="color:var(--gold)">2024-25</strong>.</p>
+        <div class="field">
+          <label class="field-label">Term Year *</label>
+          <input class="field-input" id="new-term-year" placeholder="e.g. 2024-25" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('term-year-modal')">Cancel</button>
+          <button class="btn-primary" onclick="addTermYear()">Add Term</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ROLE MANAGER MODAL ───────────────────────────────────── -->
+  <div class="modal-overlay" id="role-manager-modal" style="display:none" onclick="closeModal('role-manager-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Manage Leadership Positions</span>
+        <button class="modal-close" onclick="closeModal('role-manager-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="drawer-section">
+          <div class="drawer-section-title">Add New Position</div>
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Position Name *</label><input class="field-input" id="nr-role_name" placeholder="e.g. Basileus, Social Action Chair" /></div>
+            <div class="field">
+              <label class="field-label">Role Type</label>
+              <select class="field-input" id="nr-role_type">
+                <option value="exec_board">Executive Board</option>
+                <option value="committee_chair">Committee Chair</option>
+                <option value="committee_member">Committee Member</option>
+                <option value="appointed">Appointed</option>
+                <option value="national">National</option>
+                <option value="regional">Regional</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Committee Name</label><input class="field-input" id="nr-committee_name" placeholder="e.g. Social Action" /></div>
+            <div class="field">
+              <label class="field-label">Exec Board?</label>
+              <select class="field-input" id="nr-is_exec_board">
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+              </select>
+            </div>
+            <div class="field" style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="field-input" id="nr-description" rows="2"></textarea></div>
+          </div>
+          <button class="btn-primary" style="width:100%;margin-top:4px" onclick="saveNewRole()">Add Position</button>
+        </div>
+        <div class="drawer-section">
+          <div class="drawer-section-title">Existing Positions</div>
+          <div id="all-roles-list"><p style="color:var(--dim);font-size:12px">Loading…</p></div>
+        </div>
+      </div>
     </div>
   </div>
 
