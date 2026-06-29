@@ -1276,38 +1276,117 @@ async function openRoleManagerModal() {
 }
 
 async function loadAllRolesList() {
-  const { data } = await sb.from('leadership_roles').select('*').order('role_name');
+  const { data } = await sb.from('leadership_roles').select('*').order('is_exec_board', { ascending: false }).order('role_name');
   const el = document.getElementById('all-roles-list');
   if (!data?.length) { el.innerHTML = '<p style="color:var(--dim);font-size:12px">No positions defined yet.</p>'; return; }
-  el.innerHTML = data.map(r => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(201,168,76,0.07);font-size:13px">
-      <div>
-        <span style="color:var(--text)">${r.role_name}</span>
-        ${r.committee_name ? `<span style="color:var(--muted);font-size:11px"> — ${r.committee_name}</span>` : ''}
-        <span style="margin-left:8px">${badge(r.role_type.replace(/_/g,' '), r.is_exec_board ? 'gold' : 'dim')}</span>
-      </div>
-      <div style="display:flex;gap:6px">
-        ${badge(r.is_active ? 'Active' : 'Inactive', r.is_active ? 'green' : 'dim')}
-        <button onclick="toggleRoleActive('${r.id}',${r.is_active})" style="background:none;border:1px solid var(--gold-border);color:var(--muted);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">${r.is_active ? 'Deactivate' : 'Activate'}</button>
-      </div>
-    </div>`).join('');
+
+  // Group: exec board first, then committees
+  const exec = data.filter(r => r.is_exec_board);
+  const comm = data.filter(r => !r.is_exec_board);
+
+  function renderGroup(title, rows) {
+    if (!rows.length) return '';
+    return `
+      <div style="font-family:var(--fd);font-size:9px;letter-spacing:.14em;color:var(--gold-dim);text-transform:uppercase;margin:12px 0 6px">${title}</div>
+      ${rows.map(r => `
+        <div id="role-row-${r.id}" style="background:var(--surf2);border:1px solid var(--gold-border);border-radius:var(--r);padding:10px 12px;margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div id="role-display-${r.id}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="font-size:13px;color:var(--text);font-weight:600">${r.role_name}</span>
+                ${r.committee_name ? `<span style="color:var(--muted);font-size:11px">${r.committee_name}</span>` : ''}
+                ${badge(r.role_type.replace(/_/g,' '), r.is_exec_board ? 'gold' : 'blue')}
+                ${badge(r.is_active ? 'Active' : 'Inactive', r.is_active ? 'green' : 'dim')}
+              </div>
+              <div id="role-edit-${r.id}" style="display:none;margin-top:8px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px">
+                  <div class="field"><label class="field-label">Position Name</label>
+                    <input class="field-input" id="re-name-${r.id}" value="${r.role_name.replace(/"/g,'&quot;')}" style="font-size:13px" />
+                  </div>
+                  <div class="field"><label class="field-label">Committee</label>
+                    <input class="field-input" id="re-committee-${r.id}" value="${(r.committee_name ?? '').replace(/"/g,'&quot;')}" style="font-size:13px" placeholder="If applicable" />
+                  </div>
+                  <div class="field"><label class="field-label">Role Type</label>
+                    <select class="field-input" id="re-type-${r.id}" style="font-size:12px">
+                      <option value="exec_board" ${r.role_type==='exec_board'?'selected':''}>Executive Board</option>
+                      <option value="committee_chair" ${r.role_type==='committee_chair'?'selected':''}>Committee Chair</option>
+                      <option value="committee_member" ${r.role_type==='committee_member'?'selected':''}>Committee Member</option>
+                      <option value="appointed" ${r.role_type==='appointed'?'selected':''}>Appointed</option>
+                      <option value="national" ${r.role_type==='national'?'selected':''}>National</option>
+                      <option value="regional" ${r.role_type==='regional'?'selected':''}>Regional</option>
+                    </select>
+                  </div>
+                  <div class="field"><label class="field-label">Exec Board?</label>
+                    <select class="field-input" id="re-exec-${r.id}" style="font-size:12px">
+                      <option value="true"  ${r.is_exec_board?'selected':''}>Yes</option>
+                      <option value="false" ${!r.is_exec_board?'selected':''}>No</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;margin-top:8px">
+                  <button onclick="saveRoleEdit('${r.id}')" style="background:var(--gold);color:var(--black);border:none;border-radius:var(--r);padding:5px 12px;font-family:var(--fd);font-size:10px;letter-spacing:.08em;cursor:pointer;text-transform:uppercase">Save</button>
+                  <button onclick="cancelRoleEdit('${r.id}')" style="background:none;border:1px solid var(--gold-border);color:var(--muted);border-radius:var(--r);padding:5px 12px;font-family:var(--fd);font-size:10px;cursor:pointer;text-transform:uppercase">Cancel</button>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:5px;flex-shrink:0;margin-top:2px">
+              <button onclick="startRoleEdit('${r.id}')" style="background:none;border:1px solid var(--gold-border);color:var(--gold);border-radius:4px;padding:3px 9px;font-size:10px;cursor:pointer">Edit</button>
+              <button onclick="toggleRoleActive('${r.id}',${r.is_active})" style="background:none;border:1px solid var(--gold-border);color:var(--muted);border-radius:4px;padding:3px 9px;font-size:10px;cursor:pointer">${r.is_active ? 'Hide' : 'Show'}</button>
+            </div>
+          </div>
+        </div>`).join('')}`;
+  }
+
+  el.innerHTML = renderGroup('Executive Board', exec) + renderGroup('Committees & Other', comm);
+}
+
+function startRoleEdit(id) {
+  document.getElementById(`role-display-${id}`).style.display = 'none';
+  document.getElementById(`role-edit-${id}`).style.display    = 'block';
+}
+
+function cancelRoleEdit(id) {
+  document.getElementById(`role-display-${id}`).style.display = 'flex';
+  document.getElementById(`role-edit-${id}`).style.display    = 'none';
+}
+
+async function saveRoleEdit(id) {
+  const name      = document.getElementById(`re-name-${id}`)?.value?.trim();
+  const committee = document.getElementById(`re-committee-${id}`)?.value?.trim();
+  const roleType  = document.getElementById(`re-type-${id}`)?.value;
+  const isExec    = document.getElementById(`re-exec-${id}`)?.value === 'true';
+
+  if (!name) { alert('Position name cannot be empty.'); return; }
+
+  const { error } = await sb.from('leadership_roles').update({
+    role_name:     name,
+    committee_name: committee || null,
+    role_type:     roleType,
+    is_exec_board: isExec,
+  }).eq('id', id);
+
+  if (!error) {
+    allRoles = [];
+    await refreshRoles();
+    loadAllRolesList();
+  } else alert('Error: ' + error.message);
 }
 
 async function saveNewRole() {
   const name = document.getElementById('nr-role_name')?.value?.trim();
   if (!name) { alert('Position name is required.'); return; }
   const data = {
-    role_name:    name,
-    role_type:    document.getElementById('nr-role_type')?.value ?? 'committee_chair',
+    role_name:      name,
+    role_type:      document.getElementById('nr-role_type')?.value ?? 'committee_chair',
     committee_name: document.getElementById('nr-committee_name')?.value?.trim() || null,
-    is_exec_board: document.getElementById('nr-is_exec_board')?.value === 'true',
-    description:  document.getElementById('nr-description')?.value?.trim() || null,
-    is_active:    true,
+    is_exec_board:  document.getElementById('nr-is_exec_board')?.value === 'true',
+    description:    document.getElementById('nr-description')?.value?.trim() || null,
+    is_active:      true,
   };
   const { error } = await sb.from('leadership_roles').insert(data);
   if (!error) {
     ['nr-role_name','nr-committee_name','nr-description'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    allRoles = []; // force refresh
+    allRoles = [];
     await refreshRoles();
     loadAllRolesList();
   } else alert('Error: ' + error.message);
