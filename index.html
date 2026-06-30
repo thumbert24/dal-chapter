@@ -74,6 +74,9 @@
         <a class="nav-link" data-panel="leadership" onclick="showPanel('leadership')">
           <span class="nav-icon">◈</span> Leadership
         </a>
+        <a class="nav-link" data-panel="conferences" onclick="showPanel('conferences')">
+          <span class="nav-icon">⛤</span> Conferences
+        </a>
         <a class="nav-link" data-panel="events"     onclick="showPanel('events')">
           <span class="nav-icon">◷</span> Events
         </a>
@@ -189,8 +192,11 @@
         <!-- FINANCIAL -->
         <div class="panel" id="panel-financial">
           <div class="page-title-row">
-            <div><h2>Financial</h2><p>Dues, Grand Tax, and voter eligibility — FY 2024–25</p></div>
-            <button class="btn-secondary" onclick="exportFinancial()">Export CSV</button>
+            <div><h2>Financial</h2><p>Dues, Grand Tax, and voter eligibility</p></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-secondary" id="bulk-sync-btn" onclick="bulkSyncFinancialStanding()" title="Re-calculates financial standing for all members based on their payment records">Fix Financial Standing</button>
+              <button class="btn-secondary" onclick="exportFinancial()">Export CSV</button>
+            </div>
           </div>
           <div class="stats-row" id="financial-stats"></div>
           <div class="section-hdr"><span class="section-title">Dues Ledger</span></div>
@@ -245,14 +251,28 @@
           </div>
 
           <div class="section-hdr">
-            <span class="section-title" id="committee-section-title">Committee Chairs</span>
+            <span class="section-title" id="committee-section-title">Committees & Rosters</span>
           </div>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead><tr><th>Committee</th><th>Chair</th><th>Email</th><th>Term</th><th>Since</th><th></th></tr></thead>
-              <tbody id="committee-tbody"></tbody>
-            </table>
+          <div id="committee-groups"></div>
+        </div>
+
+        <!-- CONFERENCES -->
+        <div class="panel" id="panel-conferences">
+          <div class="page-title-row">
+            <div><h2>Conferences</h2><p>Track conference attendance by year and brother</p></div>
+            <button class="btn-primary" onclick="openConferenceModal()">+ Add Conference</button>
           </div>
+
+          <div class="board-tabs">
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+              <span style="font-family:var(--fd);font-size:9px;letter-spacing:.12em;color:var(--gold-dim);margin-right:4px;text-transform:uppercase">Year:</span>
+              <div id="conf-year-tab-row" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+            </div>
+          </div>
+
+          <div class="stats-row" id="conferences-stats"></div>
+
+          <div id="conferences-list"></div>
         </div>
 
         <!-- EVENTS -->
@@ -476,11 +496,12 @@
       <button class="drawer-close" onclick="closeDrawer()">✕</button>
     </div>
 
-    <div class="drawer-tabs">
+    <div class="drawer-tabs" style="flex-wrap:wrap">
       <button class="drawer-tab active" onclick="switchDrawerTab('profile')">Profile</button>
       <button class="drawer-tab"        onclick="switchDrawerTab('financial')">Financial</button>
       <button class="drawer-tab"        onclick="switchDrawerTab('certs')">Certs</button>
       <button class="drawer-tab"        onclick="switchDrawerTab('leadership')">Leadership</button>
+      <button class="drawer-tab"        onclick="switchDrawerTab('conferences')">Conferences</button>
       <button class="drawer-tab"        onclick="switchDrawerTab('bgc')">BGC</button>
     </div>
 
@@ -488,6 +509,29 @@
 
       <!-- PROFILE TAB -->
       <div class="drawer-tab-content active" id="dtab-profile">
+        <div class="drawer-section">
+          <div class="drawer-section-title">Photo</div>
+          <div style="display:flex;gap:16px;align-items:flex-start">
+            <div id="profile-photo-preview" class="profile-photo-box">
+              <span id="profile-photo-placeholder">No Photo</span>
+              <img id="profile-photo-img" style="display:none" />
+            </div>
+            <div style="flex:1">
+              <div class="field">
+                <label class="field-label">Upload from Computer</label>
+                <input class="field-input" type="file" id="dp-photo-file" accept="image/*" onchange="handlePhotoFileSelect(event)" style="padding:6px" />
+              </div>
+              <div class="field">
+                <label class="field-label">Or Paste Photo URL</label>
+                <input class="field-input" id="dp-photo_url" type="url" placeholder="https://example.com/photo.jpg" onblur="handlePhotoUrlInput()" />
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span id="photo-upload-status" style="font-size:11px;color:var(--muted)"></span>
+                <button type="button" onclick="removePhoto()" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:4px 10px;font-size:10px;cursor:pointer;margin-left:auto">Remove Photo</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="drawer-section">
           <div class="drawer-section-title">Contact Information</div>
           <div class="form-grid">
@@ -751,7 +795,40 @@
         </div>
       </div>
 
-      <!-- BACKGROUND CHECK TAB -->
+      <!-- CONFERENCES TAB -->
+      <div class="drawer-tab-content" id="dtab-conferences">
+        <div class="drawer-section">
+          <div class="drawer-section-title">Conference Attendance History</div>
+          <div id="member-conferences-list"><p style="color:var(--dim);font-size:12px">Loading…</p></div>
+        </div>
+        <div class="drawer-section">
+          <div class="cert-card">
+            <div class="cert-card-title">Add Attendance Record</div>
+            <div class="cert-fields">
+              <div class="field" style="grid-column:1/-1">
+                <label class="field-label">Conference *</label>
+                <select class="field-input" id="mc-conference_id">
+                  <option value="">Select conference…</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Role</label>
+                <select class="field-input" id="mc-role">
+                  <option value="attendee">Attendee</option>
+                  <option value="voting delegate">Voting Delegate</option>
+                  <option value="delegate">Delegate</option>
+                  <option value="presenter">Presenter</option>
+                  <option value="staff">Staff</option>
+                </select>
+              </div>
+              <div class="field"><label class="field-label">Notes</label><input class="field-input" id="mc-notes" /></div>
+            </div>
+            <button class="btn-primary" style="margin-top:10px;width:100%" onclick="addMemberConferenceRecord()">Add Record</button>
+          </div>
+        </div>
+      </div>
+
+            <!-- BACKGROUND CHECK TAB -->
       <div class="drawer-tab-content" id="dtab-bgc">
         <div class="cert-card">
           <div class="cert-card-title">Background Check Record</div>
@@ -795,6 +872,78 @@
       <span class="save-indicator" id="drawer-save-indicator">✓ Saved</span>
       <button class="btn-ghost" onclick="closeDrawer()">Close</button>
       <button class="btn-primary" onclick="saveProfile()">Save Profile</button>
+    </div>
+  </div>
+
+  <!-- ── ADD CONFERENCE MODAL ────────────────────────────────── -->
+  <div class="modal-overlay" id="conference-modal" style="display:none" onclick="closeModal('conference-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Add Conference</span>
+        <button class="modal-close" onclick="closeModal('conference-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Conference Name *</label><input class="field-input" id="cf-name" placeholder="e.g. 2024 Regional Convention" /></div>
+          <div class="field">
+            <label class="field-label">Type</label>
+            <select class="field-input" id="cf-conference_type">
+              <option value="regional">Regional</option>
+              <option value="general">General Convention</option>
+              <option value="leadership">Leadership Conference</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field"><label class="field-label">Year *</label><input class="field-input" id="cf-year" type="number" placeholder="2024" /></div>
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Location</label><input class="field-input" id="cf-location" placeholder="City, State" /></div>
+          <div class="field"><label class="field-label">Start Date</label><input class="field-input" id="cf-start_date" type="date" /></div>
+          <div class="field"><label class="field-label">End Date</label><input class="field-input" id="cf-end_date" type="date" /></div>
+        </div>
+        <div id="conference-modal-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('conference-modal')">Cancel</button>
+          <button class="btn-primary" onclick="saveConference()">Add Conference</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONFERENCE ATTENDANCE MODAL ─────────────────────────── -->
+  <div class="modal-overlay" id="conf-attendance-modal" style="display:none" onclick="closeModal('conf-attendance-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title" id="conf-attendance-title">Conference Attendees</span>
+        <button class="modal-close" onclick="closeModal('conf-attendance-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="drawer-section">
+          <div class="drawer-section-title">Add Attendee</div>
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/-1">
+              <label class="field-label">Brother *</label>
+              <select class="field-input" id="ca-member_id">
+                <option value="">Select brother…</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Role</label>
+              <select class="field-input" id="ca-role">
+                <option value="attendee">Attendee</option>
+                <option value="voting delegate">Voting Delegate</option>
+                <option value="delegate">Delegate</option>
+                <option value="presenter">Presenter</option>
+                <option value="staff">Staff</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Notes</label><input class="field-input" id="ca-notes" placeholder="Optional" /></div>
+          </div>
+          <button class="btn-primary" style="width:100%;margin-top:4px" onclick="addConferenceAttendee()">Add Attendee</button>
+        </div>
+        <div class="drawer-section">
+          <div class="drawer-section-title">Current Attendees</div>
+          <div id="conf-attendee-list"><p style="color:var(--dim);font-size:12px">Loading…</p></div>
+        </div>
+      </div>
     </div>
   </div>
 

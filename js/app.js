@@ -7,7 +7,6 @@
 // ── CONFIG — paste your Supabase credentials here ──────────────
 const SUPABASE_URL  = 'https://eiiybwmmxfayuutjcinn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpaXlid21teGZheXV1dGpjaW5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDcyNzEsImV4cCI6MjA5NjA4MzI3MX0.TfYFylax6MQE6igsmxwQUKiWvClaCkxbnFq1nU56RQU';
-
 // ── INIT ───────────────────────────────────────────────────────
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -110,8 +109,8 @@ function showApp() {
 // ── NAVIGATION ─────────────────────────────────────────────────
 const PANEL_LABELS = {
   overview: 'Dashboard', members: 'Members', compliance: 'Compliance',
-  financial: 'Financial', leadership: 'Leadership', events: 'Events',
-  reports: 'Reports', documents: 'Documents'
+  financial: 'Financial', leadership: 'Leadership', conferences: 'Conferences',
+  events: 'Events', reports: 'Reports', documents: 'Documents'
 };
 
 function showPanel(name) {
@@ -123,13 +122,14 @@ function showPanel(name) {
   document.getElementById('sidebar').classList.remove('open');
 
   const loaders = {
-    overview:   loadOverview,
-    members:    loadMembers,
-    compliance: loadCompliance,
-    financial:  loadFinancial,
-    leadership: loadLeadership,
-    events:     loadEvents,
-    documents:  loadDocuments,
+    overview:    loadOverview,
+    members:     loadMembers,
+    compliance:  loadCompliance,
+    financial:   loadFinancial,
+    leadership:  loadLeadership,
+    conferences: loadConferences,
+    events:      loadEvents,
+    documents:   loadDocuments,
   };
   if (loaders[name]) loaders[name]();
 }
@@ -603,23 +603,44 @@ async function loadBoardForTerm(term) {
         </tr>`;
       }).join('');
 
-  // Committee table
-  document.getElementById('committee-tbody').innerHTML = !comm.length
-    ? emptyRow(6, term ? `No committees recorded for ${term}.` : 'No current committee assignments.')
-    : comm.map(r => {
-        const m  = r.members;
-        const lr = r.leadership_roles;
-        return `<tr>
-          <td>${lr?.committee_name ?? lr?.role_name ?? '—'}</td>
-          <td>${m ? m.first_name + ' ' + m.last_name : '—'}</td>
-          <td style="color:var(--muted);font-size:12px">${m?.email_primary ?? '—'}</td>
-          <td>${r.term_year ?? '—'}</td>
-          <td>${r.start_date ? new Date(r.start_date).toLocaleDateString() : '—'}</td>
-          <td>
+  // Committee groups — grouped by committee_name, showing full roster
+  const groupsEl = document.getElementById('committee-groups');
+  if (!comm.length) {
+    groupsEl.innerHTML = `<div class="empty-msg">${term ? `No committees recorded for ${term}.` : 'No current committee assignments.'}</div>`;
+  } else {
+    const grouped = {};
+    comm.forEach(r => {
+      const key = r.leadership_roles?.committee_name ?? r.leadership_roles?.role_name ?? 'Other';
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(r);
+    });
+
+    groupsEl.innerHTML = Object.entries(grouped).map(([committeeName, members]) => {
+      // Sort chairs first
+      members.sort((a,b) => {
+        const aChair = a.leadership_roles?.role_type === 'committee_chair' ? 0 : 1;
+        const bChair = b.leadership_roles?.role_type === 'committee_chair' ? 0 : 1;
+        return aChair - bChair;
+      });
+      return `<div class="committee-group">
+        <div class="committee-group-header">
+          <span class="committee-group-name">${committeeName}</span>
+          <span class="committee-group-count">${members.length} member${members.length !== 1 ? 's' : ''}</span>
+        </div>
+        ${members.map(r => {
+          const m = r.members;
+          const isChair = r.leadership_roles?.role_type === 'committee_chair';
+          return `<div class="committee-member-row">
+            <div>
+              <span class="committee-member-name">${m ? m.first_name + ' ' + m.last_name : '—'}</span>
+              <span class="committee-member-role">${isChair ? badge('Chair','gold') : badge('Member','dim')} ${m?.email_primary ? '· ' + m.email_primary : ''}</span>
+            </div>
             <button onclick="removeRoleAssignment('${r.id}')" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Remove</button>
-          </td>
-        </tr>`;
-      }).join('');
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('');
+  }
 }
 
 async function removeRoleAssignment(id) {
@@ -965,6 +986,12 @@ function openDrawer(member) {
     setToggle(f, !!member[f]);
   });
 
+  // Photo
+  renderProfilePhoto(member.photo_url ?? null);
+  document.getElementById('dp-photo_url').value = member.photo_url ?? '';
+  document.getElementById('dp-photo-file').value = '';
+  document.getElementById('photo-upload-status').textContent = '';
+
   switchDrawerTab('profile');
   loadDrawerFinancial();
   loadDrawerCerts();
@@ -984,12 +1011,13 @@ function closeDrawer() {
 function switchDrawerTab(tab) {
   drawerTab = tab;
   document.querySelectorAll('.drawer-tab').forEach((b,i) => {
-    const tabs = ['profile','financial','certs','leadership','bgc'];
+    const tabs = ['profile','financial','certs','leadership','conferences','bgc'];
     b.classList.toggle('active', tabs[i] === tab);
   });
   document.querySelectorAll('.drawer-tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('dtab-' + tab).classList.add('active');
-  if (tab === 'leadership') loadDrawerLeadership();
+  if (tab === 'leadership')   loadDrawerLeadership();
+  if (tab === 'conferences')  loadDrawerConferences();
 }
 
 function setToggle(field, val) {
@@ -1066,13 +1094,88 @@ async function loadDrawerFinancial() {
     : '<p style="color:var(--dim);font-size:12px">No payment records yet.</p>';
 }
 
+// ── SYNC FINANCIAL STANDING ───────────────────────────────────
+// Called after any dues or grand tax save.
+// Checks if dues are paid for the current fiscal year and auto-updates
+// financial_standing and voting_eligible on the member record.
+async function syncFinancialStanding(memberId) {
+  const currentYear = getCurrentFiscalYear();
+
+  const [{ data: dues }, { data: tax }] = await Promise.all([
+    sb.from('dues_payments')
+      .select('payment_status')
+      .eq('member_id', memberId)
+      .eq('fiscal_year', currentYear)
+      .order('created_at', { ascending: false })
+      .limit(1),
+    sb.from('grand_tax')
+      .select('payment_status')
+      .eq('member_id', memberId)
+      .eq('fiscal_year', currentYear)
+      .limit(1),
+  ]);
+
+  const duesPaid = dues?.[0]?.payment_status === 'paid';
+  const taxPaid  = tax?.[0]?.payment_status  === 'paid';
+
+  // Financial = dues paid. Voting = dues AND grand tax paid.
+  // If no grand tax record exists yet, only require dues.
+  const hasGrandTax   = (tax ?? []).length > 0;
+  const isFinancial   = duesPaid;
+  const isVoting      = duesPaid && (!hasGrandTax || taxPaid);
+
+  await sb.from('members').update({
+    financial_standing: isFinancial,
+    voting_eligible:    isVoting,
+  }).eq('id', memberId);
+
+  // Update the toggles in the drawer so they reflect the new state
+  if (drawerMember?.id === memberId) {
+    drawerToggles.financial_standing = isFinancial;
+    drawerToggles.voting_eligible    = isVoting;
+    setToggle('financial_standing', isFinancial);
+    setToggle('voting_eligible',    isVoting);
+  }
+}
+
+// Bulk fix — re-syncs all active members based on payment records
+async function bulkSyncFinancialStanding() {
+  const btn = document.getElementById('bulk-sync-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+
+  const { data: members } = await sb.from('members')
+    .select('id')
+    .eq('membership_status', 'active');
+
+  let count = 0;
+  for (const m of (members ?? [])) {
+    await syncFinancialStanding(m.id);
+    count++;
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = `✓ Synced ${count} members`; }
+  setTimeout(() => { if (btn) btn.textContent = 'Fix Financial Standing'; }, 3000);
+  loadOverview();
+  loadMembers();
+}
+
+function getCurrentFiscalYear() {
+  // Fiscal year runs July–June: July 2024 → June 2025 = "2024-25"
+  const now   = new Date();
+  const month = now.getMonth(); // 0 = Jan
+  const year  = now.getFullYear();
+  const start = month >= 6 ? year : year - 1; // July = month 6
+  return `${start}-${String(start + 1).slice(-2)}`;
+}
+
 async function saveDues() {
   if (!drawerMember) return;
   const owed = parseFloat(document.getElementById('fin-amount_owed').value) || 0;
   const paid = parseFloat(document.getElementById('fin-amount_paid').value) || 0;
+  const fiscalYear = document.getElementById('fin-fiscal_year').value.trim() || getCurrentFiscalYear();
   const data = {
     member_id:      drawerMember.id,
-    fiscal_year:    document.getElementById('fin-fiscal_year').value.trim() || '2024-25',
+    fiscal_year:    fiscalYear,
     term:           document.getElementById('fin-term').value,
     amount_owed:    owed,
     amount_paid:    paid,
@@ -1081,15 +1184,20 @@ async function saveDues() {
     payment_status: paid >= owed && owed > 0 ? 'paid' : paid > 0 ? 'partial' : 'outstanding',
   };
   const { error } = await sb.from('dues_payments').insert(data);
-  if (!error) { showSaved(); loadDrawerFinancial(); loadFinancial(); }
-  else alert('Error: ' + error.message);
+  if (!error) {
+    showSaved();
+    await syncFinancialStanding(drawerMember.id);
+    loadDrawerFinancial();
+    loadFinancial();
+    loadOverview();
+  } else alert('Error: ' + error.message);
 }
 
 async function saveGrandTax() {
   if (!drawerMember) return;
   const owed = parseFloat(document.getElementById('tax-amount_owed').value) || 0;
   const paid = parseFloat(document.getElementById('tax-amount_paid').value) || 0;
-  const year = document.getElementById('tax-fiscal_year').value.trim() || '2024-25';
+  const year = document.getElementById('tax-fiscal_year').value.trim() || getCurrentFiscalYear();
   const data = {
     member_id:           drawerMember.id,
     fiscal_year:         year,
@@ -1100,8 +1208,13 @@ async function saveGrandTax() {
     payment_status:      paid >= owed && owed > 0 ? 'paid' : paid > 0 ? 'partial' : 'outstanding',
   };
   const { error } = await sb.from('grand_tax').upsert(data, { onConflict: 'member_id,fiscal_year' });
-  if (!error) { showSaved(); loadDrawerFinancial(); loadFinancial(); }
-  else alert('Error: ' + error.message);
+  if (!error) {
+    showSaved();
+    await syncFinancialStanding(drawerMember.id);
+    loadDrawerFinancial();
+    loadFinancial();
+    loadOverview();
+  } else alert('Error: ' + error.message);
 }
 
 // ── CERTIFICATIONS ─────────────────────────────────────────────
@@ -1501,4 +1614,358 @@ async function deleteCert(id) {
   const { error } = await sb.from('certifications').delete().eq('id', id);
   if (!error) { showSaved(); loadDrawerCerts(); }
   else alert('Error: ' + error.message);
+}
+
+// ── CONFERENCES PANEL ──────────────────────────────────────────
+let allConferences   = [];
+let activeConfYear   = null;
+
+async function loadConferences() {
+  const { data } = await sb.from('conferences').select('*').order('year', { ascending: false }).order('name');
+  allConferences = data ?? [];
+
+  const years = [...new Set(allConferences.map(c => c.year))];
+  if (!activeConfYear || !years.includes(activeConfYear)) {
+    activeConfYear = years[0] ?? null;
+  }
+
+  renderConfYearTabs(years);
+  await renderConferenceList();
+}
+
+function renderConfYearTabs(years) {
+  const row = document.getElementById('conf-year-tab-row');
+  if (!row) return;
+  if (!years.length) {
+    row.innerHTML = '<span style="font-size:12px;color:var(--dim)">No conferences yet — add one to get started.</span>';
+    return;
+  }
+  row.innerHTML = `<button class="term-tab ${activeConfYear === 'all' ? 'active' : ''}" onclick="switchConfYear('all')">All Years</button>` +
+    years.map(y => `<button class="term-tab ${y === activeConfYear ? 'active' : ''}" onclick="switchConfYear(${y})">${y}</button>`).join('');
+}
+
+function switchConfYear(year) {
+  activeConfYear = year;
+  const years = [...new Set(allConferences.map(c => c.year))];
+  renderConfYearTabs(years);
+  renderConferenceList();
+}
+
+async function renderConferenceList() {
+  const filtered = activeConfYear === 'all' || !activeConfYear
+    ? allConferences
+    : allConferences.filter(c => c.year === activeConfYear);
+
+  // Stats
+  const { data: allAttendance } = await sb.from('conference_attendance').select('conference_id, member_id');
+  const totalAttendanceRecords = (allAttendance ?? []).length;
+  const uniqueAttendees = new Set((allAttendance ?? []).map(a => a.member_id)).size;
+
+  document.getElementById('conferences-stats').innerHTML =
+    statCard('Total Conferences', allConferences.length, 'On record') +
+    statCard('This Selection',    filtered.length, activeConfYear === 'all' ? 'All years' : `Year ${activeConfYear}`) +
+    statCard('Attendance Records', totalAttendanceRecords, 'Total check-ins') +
+    statCard('Unique Brothers',   uniqueAttendees, 'Have attended');
+
+  const listEl = document.getElementById('conferences-list');
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="empty-msg">No conferences recorded yet.</div>';
+    return;
+  }
+
+  // Fetch attendee counts per conference
+  const cards = await Promise.all(filtered.map(async (conf) => {
+    const { data: attendees } = await sb
+      .from('conference_attendance')
+      .select('*, members(first_name,last_name)')
+      .eq('conference_id', conf.id);
+
+    const chips = (attendees ?? []).map(a =>
+      `<span class="attendee-chip">${a.members?.first_name ?? ''} ${a.members?.last_name ?? ''}${a.role && a.role !== 'attendee' ? ' · ' + a.role : ''}</span>`
+    ).join('');
+
+    return `<div class="conference-card">
+      <div class="conference-card-top">
+        <div>
+          <div class="conference-name">${conf.name}</div>
+          <div class="conference-meta">${conf.year} ${conf.location ? '· ' + conf.location : ''} ${conf.conference_type ? '· ' + badge(conf.conference_type, 'gold') : ''}</div>
+        </div>
+        <button class="btn-secondary" style="padding:5px 12px;font-size:9px" onclick="openConferenceAttendanceModal('${conf.id}')">Manage Attendees (${(attendees ?? []).length})</button>
+      </div>
+      <div class="conference-attendee-chips">
+        ${chips || '<span style="color:var(--dim);font-size:12px">No attendees logged yet.</span>'}
+      </div>
+    </div>`;
+  }));
+
+  listEl.innerHTML = cards.join('');
+}
+
+function openConferenceModal() {
+  ['cf-name','cf-year','cf-location','cf-start_date','cf-end_date'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('cf-conference_type').value = 'regional';
+  document.getElementById('conference-modal-error').style.display = 'none';
+  document.getElementById('conference-modal').style.display = 'flex';
+}
+
+async function saveConference() {
+  const errEl = document.getElementById('conference-modal-error');
+  errEl.style.display = 'none';
+
+  const name = document.getElementById('cf-name')?.value?.trim();
+  const year = parseInt(document.getElementById('cf-year')?.value);
+
+  if (!name) { errEl.textContent = 'Conference name is required.'; errEl.style.display='block'; return; }
+  if (!year) { errEl.textContent = 'Year is required.'; errEl.style.display='block'; return; }
+
+  const data = {
+    name,
+    year,
+    conference_type: document.getElementById('cf-conference_type')?.value,
+    location:        document.getElementById('cf-location')?.value?.trim() || null,
+    start_date:      document.getElementById('cf-start_date')?.value || null,
+    end_date:        document.getElementById('cf-end_date')?.value || null,
+  };
+
+  const { error } = await sb.from('conferences').insert(data);
+  if (error) { errEl.textContent = error.message; errEl.style.display='block'; return; }
+
+  closeModal('conference-modal');
+  loadConferences();
+}
+
+// ── CONFERENCE ATTENDANCE MODAL ────────────────────────────────
+let activeConferenceId = null;
+
+async function openConferenceAttendanceModal(conferenceId) {
+  activeConferenceId = conferenceId;
+  const conf = allConferences.find(c => c.id === conferenceId);
+  document.getElementById('conf-attendance-title').textContent = conf ? `${conf.name} (${conf.year})` : 'Conference Attendees';
+
+  const { data: members } = await sb.from('members').select('id,first_name,last_name').eq('membership_status','active').order('last_name');
+  const sel = document.getElementById('ca-member_id');
+  sel.innerHTML = '<option value="">Select brother…</option>' +
+    (members ?? []).map(m => `<option value="${m.id}">${m.first_name} ${m.last_name}</option>`).join('');
+
+  await renderConferenceAttendeeList();
+  document.getElementById('conf-attendance-modal').style.display = 'flex';
+}
+
+async function renderConferenceAttendeeList() {
+  const { data } = await sb
+    .from('conference_attendance')
+    .select('*, members(first_name,last_name,email_primary)')
+    .eq('conference_id', activeConferenceId);
+
+  const el = document.getElementById('conf-attendee-list');
+  if (!data?.length) { el.innerHTML = '<p style="color:var(--dim);font-size:12px">No attendees yet.</p>'; return; }
+
+  el.innerHTML = data.map(a => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(201,168,76,0.07);font-size:13px">
+      <div>
+        <span style="color:var(--text)">${a.members?.first_name ?? ''} ${a.members?.last_name ?? ''}</span>
+        <span style="margin-left:8px">${badge(a.role ?? 'attendee', 'gold')}</span>
+      </div>
+      <button onclick="removeConferenceAttendee('${a.id}')" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Remove</button>
+    </div>`).join('');
+}
+
+async function addConferenceAttendee() {
+  const memberId = document.getElementById('ca-member_id')?.value;
+  if (!memberId) { alert('Please select a brother.'); return; }
+
+  const data = {
+    conference_id: activeConferenceId,
+    member_id:     memberId,
+    role:          document.getElementById('ca-role')?.value,
+    notes:         document.getElementById('ca-notes')?.value?.trim() || null,
+  };
+
+  const { error } = await sb.from('conference_attendance').insert(data);
+  if (error) { alert('Error: ' + error.message); return; }
+
+  document.getElementById('ca-member_id').value = '';
+  document.getElementById('ca-notes').value = '';
+  renderConferenceAttendeeList();
+  renderConferenceList();
+}
+
+async function removeConferenceAttendee(id) {
+  if (!confirm('Remove this attendance record?')) return;
+  await sb.from('conference_attendance').delete().eq('id', id);
+  renderConferenceAttendeeList();
+  renderConferenceList();
+}
+
+// ── MEMBER DRAWER: CONFERENCE TAB ──────────────────────────────
+async function loadDrawerConferences() {
+  if (!drawerMember) return;
+
+  // Populate conference dropdown
+  if (!allConferences.length) {
+    const { data } = await sb.from('conferences').select('*').order('year', { ascending: false });
+    allConferences = data ?? [];
+  }
+  const sel = document.getElementById('mc-conference_id');
+  if (sel) {
+    sel.innerHTML = '<option value="">Select conference…</option>' +
+      allConferences.map(c => `<option value="${c.id}">${c.name} (${c.year})</option>`).join('');
+  }
+
+  // Load this member's history
+  const { data: history } = await sb
+    .from('conference_attendance')
+    .select('*, conferences(name, year, location, conference_type)')
+    .eq('member_id', drawerMember.id)
+    .order('created_at', { ascending: false });
+
+  const el = document.getElementById('member-conferences-list');
+  if (!history?.length) {
+    el.innerHTML = '<p style="color:var(--dim);font-size:12px;padding:8px 0">No conference attendance recorded yet.</p>';
+    return;
+  }
+
+  el.innerHTML = history.map(h => {
+    const c = h.conferences;
+    return `<div style="background:var(--surf2);border:1px solid var(--gold-border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-family:var(--fd);font-size:11px;color:var(--gold)">${c?.name ?? '—'} (${c?.year ?? '—'})</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c?.location ?? ''} ${badge(h.role ?? 'attendee','gold')}</div>
+      </div>
+      <button onclick="removeMemberConferenceRecord('${h.id}')" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Remove</button>
+    </div>`;
+  }).join('');
+}
+
+async function addMemberConferenceRecord() {
+  if (!drawerMember) return;
+  const confId = document.getElementById('mc-conference_id')?.value;
+  if (!confId) { alert('Please select a conference.'); return; }
+
+  const data = {
+    member_id:     drawerMember.id,
+    conference_id: confId,
+    role:          document.getElementById('mc-role')?.value,
+    notes:         document.getElementById('mc-notes')?.value?.trim() || null,
+  };
+
+  const { error } = await sb.from('conference_attendance').insert(data);
+  if (error) { alert('Error: ' + error.message); return; }
+
+  showSaved();
+  document.getElementById('mc-notes').value = '';
+  loadDrawerConferences();
+}
+
+async function removeMemberConferenceRecord(id) {
+  if (!confirm('Remove this record?')) return;
+  await sb.from('conference_attendance').delete().eq('id', id);
+  loadDrawerConferences();
+}
+
+// ── PROFILE PHOTO ──────────────────────────────────────────────
+function renderProfilePhoto(url) {
+  const img  = document.getElementById('profile-photo-img');
+  const ph   = document.getElementById('profile-photo-placeholder');
+  if (url) {
+    img.src = url;
+    img.style.display = 'block';
+    ph.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    ph.style.display = 'block';
+  }
+}
+
+async function handlePhotoFileSelect(event) {
+  if (!drawerMember) return;
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('photo-upload-status');
+  statusEl.textContent = 'Uploading…';
+  statusEl.style.color = 'var(--muted)';
+
+  // Validate file type and size
+  if (!file.type.startsWith('image/')) {
+    statusEl.textContent = 'Please select an image file.';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    statusEl.textContent = 'Image must be under 5MB.';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+
+  const ext      = file.name.split('.').pop();
+  const filePath = `${drawerMember.id}-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await sb.storage
+    .from('member-photos')
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) {
+    statusEl.textContent = 'Upload failed: ' + uploadError.message;
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+
+  const { data: urlData } = sb.storage.from('member-photos').getPublicUrl(filePath);
+  const publicUrl = urlData.publicUrl;
+
+  // Save to member record immediately
+  const { error: updateError } = await sb.from('members').update({ photo_url: publicUrl }).eq('id', drawerMember.id);
+
+  if (updateError) {
+    statusEl.textContent = 'Saved upload but failed to link to profile: ' + updateError.message;
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+
+  drawerMember.photo_url = publicUrl;
+  document.getElementById('dp-photo_url').value = publicUrl;
+  renderProfilePhoto(publicUrl);
+  statusEl.textContent = '✓ Photo uploaded and saved';
+  statusEl.style.color = 'var(--green)';
+  loadMembers();
+}
+
+async function handlePhotoUrlInput() {
+  if (!drawerMember) return;
+  const url = document.getElementById('dp-photo_url')?.value?.trim();
+  if (!url) return;
+
+  const statusEl = document.getElementById('photo-upload-status');
+
+  const { error } = await sb.from('members').update({ photo_url: url }).eq('id', drawerMember.id);
+  if (error) {
+    statusEl.textContent = 'Failed to save: ' + error.message;
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+
+  drawerMember.photo_url = url;
+  renderProfilePhoto(url);
+  statusEl.textContent = '✓ Photo URL saved';
+  statusEl.style.color = 'var(--green)';
+  loadMembers();
+}
+
+async function removePhoto() {
+  if (!drawerMember) return;
+  if (!confirm('Remove this member\'s photo?')) return;
+
+  const { error } = await sb.from('members').update({ photo_url: null }).eq('id', drawerMember.id);
+  if (error) { alert('Error: ' + error.message); return; }
+
+  drawerMember.photo_url = null;
+  document.getElementById('dp-photo_url').value = '';
+  document.getElementById('dp-photo-file').value = '';
+  renderProfilePhoto(null);
+  document.getElementById('photo-upload-status').textContent = '✓ Photo removed';
+  document.getElementById('photo-upload-status').style.color = 'var(--green)';
+  loadMembers();
 }

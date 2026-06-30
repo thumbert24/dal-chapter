@@ -417,3 +417,60 @@ textarea.field-input { resize: vertical; min-height: 70px; }
 }
 .term-tab:hover  { color: var(--gold); border-color: var(--gold-bright); }
 .term-tab.active { color: var(--gold); background: var(--gold-sub); border-color: var(--gold-bright); }
+
+/* ── COMMITTEE GROUPS ─────────────────────────────────────────── */
+.committee-group {
+  background: var(--surf2); border: 1px solid var(--gold-border);
+  border-radius: var(--r); margin-bottom: 12px; overflow: hidden;
+}
+.committee-group-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: var(--surf3); border-bottom: 1px solid var(--gold-border);
+}
+.committee-group-name {
+  font-family: var(--fd); font-size: 12px; color: var(--gold);
+  letter-spacing: 0.04em; font-weight: 600;
+}
+.committee-group-count {
+  font-size: 11px; color: var(--muted); font-family: var(--fd);
+}
+.committee-member-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px; border-bottom: 1px solid rgba(201,168,76,0.06);
+  font-size: 13px;
+}
+.committee-member-row:last-child { border-bottom: none; }
+.committee-member-name { color: var(--text); }
+.committee-member-role { font-size: 11px; color: var(--muted); margin-left: 8px; }
+
+/* ── CONFERENCE CARDS ─────────────────────────────────────────── */
+.conference-card {
+  background: var(--surf2); border: 1px solid var(--gold-border);
+  border-radius: var(--r); padding: 14px; margin-bottom: 10px;
+}
+.conference-card-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 8px;
+}
+.conference-name { font-family: var(--fd); font-size: 13px; color: var(--gold); font-weight: 600; }
+.conference-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.conference-attendee-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.attendee-chip {
+  background: var(--surf3); border: 1px solid var(--gold-border);
+  border-radius: 12px; padding: 3px 10px; font-size: 11px; color: var(--text);
+}
+
+/* ── PROFILE PHOTO ────────────────────────────────────────────── */
+.profile-photo-box {
+  width: 96px; height: 96px; border-radius: var(--r);
+  background: var(--surf3); border: 1px solid var(--gold-border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
+}
+.profile-photo-box span {
+  font-family: var(--fd); font-size: 9px; letter-spacing: 0.08em;
+  color: var(--dim); text-transform: uppercase; text-align: center; padding: 0 8px;
+}
+.profile-photo-box img {
+  width: 100%; height: 100%; object-fit: cover;
+}
