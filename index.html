@@ -77,6 +77,9 @@
         <a class="nav-link" data-panel="conferences" onclick="showPanel('conferences')">
           <span class="nav-icon">⛤</span> Conferences
         </a>
+        <a class="nav-link" data-panel="meetings" onclick="showPanel('meetings')">
+          <span class="nav-icon">☑</span> Meetings
+        </a>
         <a class="nav-link" data-panel="events"     onclick="showPanel('events')">
           <span class="nav-icon">◷</span> Events
         </a>
@@ -273,6 +276,37 @@
           <div class="stats-row" id="conferences-stats"></div>
 
           <div id="conferences-list"></div>
+        </div>
+
+        <!-- MEETINGS -->
+        <div class="panel" id="panel-meetings">
+          <div class="page-title-row">
+            <div><h2>Meetings</h2><p>Executive Board and Chapter Meeting attendance tracking</p></div>
+            <button class="btn-primary" onclick="openMeetingModal()">+ New Meeting</button>
+          </div>
+
+          <div class="board-tabs">
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+              <span style="font-family:var(--fd);font-size:9px;letter-spacing:.12em;color:var(--gold-dim);margin-right:4px;text-transform:uppercase">Type:</span>
+              <button class="term-tab active" data-mtype="all"       onclick="setMeetingTypeFilter('all',this)">All</button>
+              <button class="term-tab"        data-mtype="regular"   onclick="setMeetingTypeFilter('regular',this)">Chapter Meetings</button>
+              <button class="term-tab"        data-mtype="executive" onclick="setMeetingTypeFilter('executive',this)">Exec Board</button>
+              <button class="term-tab"        data-mtype="special"   onclick="setMeetingTypeFilter('special',this)">Special</button>
+            </div>
+          </div>
+
+          <div class="stats-row" id="meetings-stats"></div>
+
+          <div class="section-hdr"><span class="section-title">Meeting Log</span></div>
+          <div id="meetings-list" style="margin-bottom:1.5rem"></div>
+
+          <div class="section-hdr"><span class="section-title">Attendance Summary by Brother</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Brother</th><th>Chapter Mtgs</th><th>Exec Board</th><th>Overall %</th></tr></thead>
+              <tbody id="attendance-summary-tbody"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- EVENTS -->
@@ -872,6 +906,55 @@
       <span class="save-indicator" id="drawer-save-indicator">✓ Saved</span>
       <button class="btn-ghost" onclick="closeDrawer()">Close</button>
       <button class="btn-primary" onclick="saveProfile()">Save Profile</button>
+    </div>
+  </div>
+
+  <!-- ── NEW MEETING MODAL ───────────────────────────────────── -->
+  <div class="modal-overlay" id="meeting-modal" style="display:none" onclick="closeModal('meeting-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">New Meeting</span>
+        <button class="modal-close" onclick="closeModal('meeting-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">Meeting Date *</label><input class="field-input" id="mt-meeting_date" type="date" /></div>
+          <div class="field">
+            <label class="field-label">Meeting Type *</label>
+            <select class="field-input" id="mt-meeting_type">
+              <option value="regular">Chapter Meeting</option>
+              <option value="executive">Executive Board</option>
+              <option value="special">Special</option>
+              <option value="emergency">Emergency</option>
+              <option value="retreat">Retreat</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Title</label><input class="field-input" id="mt-title" placeholder="e.g. June Chapter Meeting" /></div>
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Notes</label><textarea class="field-input" id="mt-notes" rows="2"></textarea></div>
+        </div>
+        <div id="meeting-modal-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('meeting-modal')">Cancel</button>
+          <button class="btn-primary" onclick="saveMeeting()">Create Meeting</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ROLL CALL MODAL ─────────────────────────────────────── -->
+  <div class="modal-overlay" id="rollcall-modal" style="display:none" onclick="closeModal('rollcall-modal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:640px">
+      <div class="modal-header">
+        <span class="modal-title" id="rollcall-title">Take Attendance</span>
+        <button class="modal-close" onclick="closeModal('rollcall-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Click each brother's status to cycle: Absent → Present → Excused.</p>
+        <div id="rollcall-list" style="max-height:420px;overflow-y:auto"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('rollcall-modal')">Close</button>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -7,6 +7,7 @@
 // ── CONFIG — paste your Supabase credentials here ──────────────
 const SUPABASE_URL  = 'https://eiiybwmmxfayuutjcinn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpaXlid21teGZheXV1dGpjaW5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDcyNzEsImV4cCI6MjA5NjA4MzI3MX0.TfYFylax6MQE6igsmxwQUKiWvClaCkxbnFq1nU56RQU';
+
 // ── INIT ───────────────────────────────────────────────────────
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -110,7 +111,7 @@ function showApp() {
 const PANEL_LABELS = {
   overview: 'Dashboard', members: 'Members', compliance: 'Compliance',
   financial: 'Financial', leadership: 'Leadership', conferences: 'Conferences',
-  events: 'Events', reports: 'Reports', documents: 'Documents'
+  meetings: 'Meetings', events: 'Events', reports: 'Reports', documents: 'Documents'
 };
 
 function showPanel(name) {
@@ -128,6 +129,7 @@ function showPanel(name) {
     financial:   loadFinancial,
     leadership:  loadLeadership,
     conferences: loadConferences,
+    meetings:    loadMeetings,
     events:      loadEvents,
     documents:   loadDocuments,
   };
@@ -1964,4 +1966,214 @@ async function removePhoto() {
   document.getElementById('photo-upload-status').textContent = '✓ Photo removed';
   document.getElementById('photo-upload-status').style.color = 'var(--green)';
   loadMembers();
+}
+
+// ── MEETINGS PANEL ──────────────────────────────────────────────
+let allMeetings        = [];
+let meetingTypeFilter  = 'all';
+let activeMeetingId    = null;
+let rollcallState      = {}; // member_id -> 'absent' | 'present' | 'excused'
+
+async function loadMeetings() {
+  const { data } = await sb.from('meetings').select('*').order('meeting_date', { ascending: false });
+  allMeetings = data ?? [];
+  await renderMeetingsList();
+  await renderAttendanceSummary();
+}
+
+function setMeetingTypeFilter(type, btn) {
+  meetingTypeFilter = type;
+  document.querySelectorAll('#panel-meetings .term-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMeetingsList();
+}
+
+async function renderMeetingsList() {
+  const filtered = meetingTypeFilter === 'all'
+    ? allMeetings
+    : allMeetings.filter(m => m.meeting_type === meetingTypeFilter);
+
+  // Stats
+  const chapterCount = allMeetings.filter(m => m.meeting_type === 'regular').length;
+  const execCount     = allMeetings.filter(m => m.meeting_type === 'executive').length;
+
+  document.getElementById('meetings-stats').innerHTML =
+    statCard('Total Meetings',    allMeetings.length, 'On record') +
+    statCard('Chapter Meetings',  chapterCount, 'Regular meetings', 'good') +
+    statCard('Exec Board Mtgs',   execCount, 'Board sessions') +
+    statCard('This View',         filtered.length, meetingTypeFilter === 'all' ? 'All types' : meetingTypeFilter);
+
+  const listEl = document.getElementById('meetings-list');
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="empty-msg">No meetings recorded yet.</div>';
+    return;
+  }
+
+  const typeColor = { regular: 'dim', executive: 'gold', special: 'blue', emergency: 'red', retreat: 'green' };
+
+  // Get attendance counts per meeting
+  const cards = await Promise.all(filtered.map(async (mt) => {
+    const { data: att } = await sb
+      .from('meeting_attendance')
+      .select('present')
+      .eq('meeting_date', mt.meeting_date)
+      .eq('meeting_type', mt.meeting_type);
+
+    const presentCount = (att ?? []).filter(a => a.present).length;
+    const totalCount   = (att ?? []).length;
+    const d  = new Date(mt.meeting_date);
+    const mo = d.toLocaleString('default',{month:'short'}).toUpperCase();
+
+    return `<div class="meeting-card">
+      <div class="meeting-card-info">
+        <div class="meeting-date-chip">
+          <span class="mc-month">${mo}</span>
+          <span class="mc-day">${d.getDate()}</span>
+        </div>
+        <div>
+          <div class="meeting-title">${mt.title || (mt.meeting_type === 'regular' ? 'Chapter Meeting' : mt.meeting_type.charAt(0).toUpperCase()+mt.meeting_type.slice(1)+' Meeting')}</div>
+          <div class="meeting-meta">${badge(mt.meeting_type.replace(/_/g,' '), typeColor[mt.meeting_type] ?? 'dim')} ${totalCount ? `· ${presentCount}/${totalCount} present` : '· No attendance taken yet'}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-secondary" style="padding:5px 12px;font-size:9px" onclick="openRollCall('${mt.id}')">Take Attendance</button>
+        <button onclick="deleteMeeting('${mt.id}')" style="background:none;border:1px solid rgba(201,76,76,0.3);color:var(--red);border-radius:4px;padding:5px 10px;font-size:10px;cursor:pointer">Delete</button>
+      </div>
+    </div>`;
+  }));
+
+  listEl.innerHTML = cards.join('');
+}
+
+function openMeetingModal() {
+  ['mt-meeting_date','mt-title','mt-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('mt-meeting_type').value = 'regular';
+  document.getElementById('meeting-modal-error').style.display = 'none';
+  document.getElementById('meeting-modal').style.display = 'flex';
+}
+
+async function saveMeeting() {
+  const errEl = document.getElementById('meeting-modal-error');
+  errEl.style.display = 'none';
+
+  const date = document.getElementById('mt-meeting_date')?.value;
+  if (!date) { errEl.textContent = 'Meeting date is required.'; errEl.style.display='block'; return; }
+
+  const data = {
+    meeting_date: date,
+    meeting_type: document.getElementById('mt-meeting_type')?.value,
+    title:        document.getElementById('mt-title')?.value?.trim() || null,
+    notes:        document.getElementById('mt-notes')?.value?.trim() || null,
+  };
+
+  const { error } = await sb.from('meetings').insert(data);
+  if (error) { errEl.textContent = error.message; errEl.style.display='block'; return; }
+
+  closeModal('meeting-modal');
+  loadMeetings();
+}
+
+async function deleteMeeting(id) {
+  if (!confirm('Delete this meeting? This does not delete attendance records already logged for that date.')) return;
+  await sb.from('meetings').delete().eq('id', id);
+  loadMeetings();
+}
+
+// ── ROLL CALL ────────────────────────────────────────────────────
+async function openRollCall(meetingId) {
+  activeMeetingId = meetingId;
+  const mt = allMeetings.find(m => m.id === meetingId);
+  if (!mt) return;
+
+  document.getElementById('rollcall-title').textContent =
+    `${mt.title || (mt.meeting_type === 'regular' ? 'Chapter Meeting' : mt.meeting_type + ' Meeting')} — ${new Date(mt.meeting_date).toLocaleDateString()}`;
+
+  // Load all active members
+  const { data: members } = await sb.from('members').select('id,first_name,last_name').eq('membership_status','active').order('last_name');
+
+  // Load existing attendance for this date+type
+  const { data: existing } = await sb
+    .from('meeting_attendance')
+    .select('*')
+    .eq('meeting_date', mt.meeting_date)
+    .eq('meeting_type', mt.meeting_type);
+
+  rollcallState = {};
+  (members ?? []).forEach(m => {
+    const rec = (existing ?? []).find(e => e.member_id === m.id);
+    rollcallState[m.id] = rec ? (rec.present ? 'present' : rec.excused ? 'excused' : 'absent') : 'absent';
+  });
+
+  renderRollCallList(members ?? []);
+  document.getElementById('rollcall-modal').style.display = 'flex';
+}
+
+function renderRollCallList(members) {
+  const el = document.getElementById('rollcall-list');
+  el.innerHTML = members.map(m => {
+    const status = rollcallState[m.id] ?? 'absent';
+    return `<div class="rollcall-row">
+      <span class="rollcall-name">${m.first_name} ${m.last_name}</span>
+      <button class="rollcall-status-btn rollcall-status-${status}" onclick="cycleRollCallStatus('${m.id}')">${status}</button>
+    </div>`;
+  }).join('');
+}
+
+async function cycleRollCallStatus(memberId) {
+  const order = ['absent','present','excused'];
+  const current = rollcallState[memberId] ?? 'absent';
+  const next = order[(order.indexOf(current) + 1) % order.length];
+  rollcallState[memberId] = next;
+
+  // Update button immediately
+  const btn = document.querySelector(`.rollcall-row button[onclick="cycleRollCallStatus('${memberId}')"]`);
+  if (btn) {
+    btn.className = `rollcall-status-btn rollcall-status-${next}`;
+    btn.textContent = next;
+  }
+
+  // Save immediately
+  const mt = allMeetings.find(m => m.id === activeMeetingId);
+  if (!mt) return;
+
+  const data = {
+    member_id:    memberId,
+    meeting_date: mt.meeting_date,
+    meeting_type: mt.meeting_type,
+    present:      next === 'present',
+    excused:      next === 'excused',
+  };
+
+  await sb.from('meeting_attendance').upsert(data, { onConflict: 'member_id,meeting_date,meeting_type' });
+  renderMeetingsList(); // refresh present counts in background
+}
+
+// ── ATTENDANCE SUMMARY ────────────────────────────────────────────
+async function renderAttendanceSummary() {
+  const { data: members } = await sb.from('members').select('id,first_name,last_name').eq('membership_status','active').order('last_name');
+  const { data: allAtt }  = await sb.from('meeting_attendance').select('member_id,meeting_type,present');
+
+  const tbody = document.getElementById('attendance-summary-tbody');
+  if (!members?.length) { tbody.innerHTML = emptyRow(4); return; }
+
+  function pctFor(memberId, type) {
+    const recs = (allAtt ?? []).filter(a => a.member_id === memberId && (type === 'all' || a.meeting_type === type));
+    if (!recs.length) return null;
+    const present = recs.filter(a => a.present).length;
+    return Math.round(present / recs.length * 100);
+  }
+
+  tbody.innerHTML = members.map(m => {
+    const chapterPct = pctFor(m.id, 'regular');
+    const execPct    = pctFor(m.id, 'executive');
+    const overallPct = pctFor(m.id, 'all');
+    const fmtPct = (p) => p === null ? '<span style="color:var(--dim)">—</span>' : `${p}%`;
+    const colorFor = (p) => p === null ? '' : p >= 80 ? 'color:var(--green)' : p >= 50 ? 'color:var(--amber)' : 'color:var(--red)';
+    return `<tr>
+      <td>${m.first_name} ${m.last_name}</td>
+      <td style="${colorFor(chapterPct)}">${fmtPct(chapterPct)}</td>
+      <td style="${colorFor(execPct)}">${fmtPct(execPct)}</td>
+      <td style="${colorFor(overallPct)}">${fmtPct(overallPct)}</td>
+    </tr>`;
+  }).join('');
 }
