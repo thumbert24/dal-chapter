@@ -5,9 +5,8 @@
 ───────────────────────────────────────────────────────────────── */
 
 // ── CONFIG — paste your Supabase credentials here ──────────────
-const SUPABASE_URL  = 'https://your-project-ref.supabase.co';
-const SUPABASE_ANON = 'your-anon-key-here';
-
+const SUPABASE_URL  = 'https://eiiybwmmxfayuutjcinn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpaXlid21teGZheXV1dGpjaW5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDcyNzEsImV4cCI6MjA5NjA4MzI3MX0.TfYFylax6MQE6igsmxwQUKiWvClaCkxbnFq1nU56RQU';
 // ── INIT ───────────────────────────────────────────────────────
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
