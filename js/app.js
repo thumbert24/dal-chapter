@@ -5,8 +5,9 @@
 ───────────────────────────────────────────────────────────────── */
 
 // ── CONFIG — paste your Supabase credentials here ──────────────
-const SUPABASE_URL  = 'https://eiiybwmmxfayuutjcinn.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpaXlid21teGZheXV1dGpjaW5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDcyNzEsImV4cCI6MjA5NjA4MzI3MX0.TfYFylax6MQE6igsmxwQUKiWvClaCkxbnFq1nU56RQU';
+const SUPABASE_URL  = 'https://your-project-ref.supabase.co';
+const SUPABASE_ANON = 'your-anon-key-here';
+
 // ── INIT ───────────────────────────────────────────────────────
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -1513,9 +1514,6 @@ async function toggleRoleActive(id, current) {
 }
 
 // ── UPDATED CERT SAVE (with year_valid in notes field) ─────────
-// Extend existing saveCert to include year_valid stored in notes
-const _origSaveCert = saveCert;
-// Override saveCert to include year_valid
 async function saveCert(type) {
   if (!drawerMember) return;
   const fields = ['status','provider','completed_date','expiration_date','certificate_number'];
@@ -1540,7 +1538,6 @@ async function saveCert(type) {
 }
 
 // Update loadDrawerCerts to also load year_valid
-const _origLoadCerts = loadDrawerCerts;
 async function loadDrawerCerts() {
   if (!drawerMember) return;
   const { data } = await sb.from('certifications').select('*').eq('member_id', drawerMember.id);
