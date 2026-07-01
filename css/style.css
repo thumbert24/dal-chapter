@@ -474,3 +474,34 @@ textarea.field-input { resize: vertical; min-height: 70px; }
 .profile-photo-box img {
   width: 100%; height: 100%; object-fit: cover;
 }
+
+/* ── MEETING LOG & ROLL CALL ─────────────────────────────────── */
+.meeting-card {
+  background: var(--surf2); border: 1px solid var(--gold-border);
+  border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.meeting-card-info { display: flex; align-items: center; gap: 12px; }
+.meeting-date-chip {
+  background: var(--surf3); border: 1px solid var(--gold-border);
+  border-radius: var(--r); padding: 6px 10px; text-align: center; min-width: 56px;
+}
+.meeting-date-chip .mc-month { display:block; font-family: var(--fd); font-size: 8px; color: var(--gold-dim); letter-spacing: .1em; }
+.meeting-date-chip .mc-day   { display:block; font-family: var(--fd); font-size: 17px; color: var(--gold); font-weight: 600; }
+.meeting-title { font-size: 13px; color: var(--text); font-weight: 600; }
+.meeting-meta  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.rollcall-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px; border-bottom: 1px solid rgba(201,168,76,0.07);
+}
+.rollcall-row:last-child { border-bottom: none; }
+.rollcall-name { font-size: 13px; color: var(--text); }
+.rollcall-status-btn {
+  border: none; border-radius: var(--r); padding: 5px 14px;
+  font-family: var(--fd); font-size: 10px; letter-spacing: 0.08em;
+  cursor: pointer; text-transform: uppercase; min-width: 78px; text-align: center;
+}
+.rollcall-status-absent  { background: var(--red-bg);   color: var(--red); }
+.rollcall-status-present { background: var(--green-bg); color: var(--green); }
+.rollcall-status-excused { background: var(--blue-bg);  color: var(--blue); }

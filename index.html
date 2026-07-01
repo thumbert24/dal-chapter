@@ -388,136 +388,6 @@
     </div>
   </div>
 
-  <!-- ── MEMBER MODAL ───────────────────────────────────────────── -->
-  <div class="modal-overlay" id="member-modal" style="display:none" onclick="closeModal('member-modal')">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <span class="modal-title" id="member-modal-title">Add Member</span>
-        <button class="modal-close" onclick="closeModal('member-modal')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <div class="field"><label class="field-label">First Name *</label><input class="field-input" id="m-first_name" /></div>
-          <div class="field"><label class="field-label">Last Name *</label><input class="field-input" id="m-last_name" /></div>
-          <div class="field"><label class="field-label">Primary Email *</label><input class="field-input" id="m-email_primary" type="email" /></div>
-          <div class="field"><label class="field-label">Mobile Phone</label><input class="field-input" id="m-phone_mobile" /></div>
-          <div class="field"><label class="field-label">City</label><input class="field-input" id="m-city" /></div>
-          <div class="field"><label class="field-label">State</label><input class="field-input" id="m-state" maxlength="2" /></div>
-          <div class="field"><label class="field-label">Employer</label><input class="field-input" id="m-employer" /></div>
-          <div class="field"><label class="field-label">Occupation</label><input class="field-input" id="m-occupation" /></div>
-          <div class="field"><label class="field-label">Member Number</label><input class="field-input" id="m-member_number" /></div>
-          <div class="field"><label class="field-label">Chapter Initiated</label><input class="field-input" id="m-chapter_initiated" /></div>
-          <div class="field"><label class="field-label">Initiated Date</label><input class="field-input" id="m-initiated_date" type="date" /></div>
-          <div class="field">
-            <label class="field-label">Membership Status</label>
-            <select class="field-input" id="m-membership_status">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
-              <option value="honorary">Honorary</option>
-              <option value="life">Life</option>
-            </select>
-          </div>
-        </div>
-        <div id="member-modal-error" class="error-msg" style="display:none"></div>
-        <div class="modal-actions">
-          <button class="btn-ghost" onclick="closeModal('member-modal')">Cancel</button>
-          <button class="btn-primary" id="member-save-btn" onclick="saveMember()">Add Member</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── EVENT MODAL ────────────────────────────────────────────── -->
-  <div class="modal-overlay" id="event-modal" style="display:none" onclick="closeModal('event-modal')">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <span class="modal-title" id="event-modal-title">New Event</span>
-        <button class="modal-close" onclick="closeModal('event-modal')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <div class="field" style="grid-column:1/-1"><label class="field-label">Event Name *</label><input class="field-input" id="e-event_name" /></div>
-          <div class="field">
-            <label class="field-label">Event Type</label>
-            <select class="field-input" id="e-event_type">
-              <option value="chapter_meeting">Chapter Meeting</option>
-              <option value="community_service">Community Service</option>
-              <option value="social">Social</option>
-              <option value="fundraiser">Fundraiser</option>
-              <option value="scholarship">Scholarship</option>
-              <option value="fraternal">Fraternal</option>
-              <option value="national">National</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div class="field"><label class="field-label">Event Date *</label><input class="field-input" id="e-event_date" type="date" /></div>
-          <div class="field"><label class="field-label">Location</label><input class="field-input" id="e-location" /></div>
-          <div class="field">
-            <label class="field-label">Approval Status</label>
-            <select class="field-input" id="e-approval_status">
-              <option value="draft">Draft</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="denied">Denied</option>
-            </select>
-          </div>
-          <div class="field" style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="field-input" id="e-description" rows="3"></textarea></div>
-        </div>
-        <div class="checkbox-row">
-          <label class="check-label"><input type="checkbox" id="e-requires_approval" /> Requires Approval</label>
-          <label class="check-label"><input type="checkbox" id="e-requires_insurance" /> Requires Insurance</label>
-          <label class="check-label"><input type="checkbox" id="e-requires_bgc" /> BGC Required</label>
-          <label class="check-label"><input type="checkbox" id="e-insurance_filed" /> Insurance Filed</label>
-        </div>
-        <div id="event-modal-error" class="error-msg" style="display:none"></div>
-        <div class="modal-actions">
-          <button class="btn-ghost" onclick="closeModal('event-modal')">Cancel</button>
-          <button class="btn-primary" id="event-save-btn" onclick="saveEvent()">Create Event</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── DOCUMENT MODAL ─────────────────────────────────────────── -->
-  <div class="modal-overlay" id="doc-modal" style="display:none" onclick="closeModal('doc-modal')">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <span class="modal-title">Add Document Record</span>
-        <button class="modal-close" onclick="closeModal('doc-modal')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <div class="field" style="grid-column:1/-1"><label class="field-label">Title *</label><input class="field-input" id="d-title" /></div>
-          <div class="field">
-            <label class="field-label">Category</label>
-            <select class="field-input" id="d-doc_category">
-              <option value="constitution_bylaws">Constitution & Bylaws</option>
-              <option value="financial_policy">Financial Policy</option>
-              <option value="minutes">Minutes</option>
-              <option value="calendar">Calendar</option>
-              <option value="strategic_plan">Strategic Plan</option>
-              <option value="historical">Historical</option>
-              <option value="compliance">Compliance</option>
-              <option value="operational">Operational</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div class="field"><label class="field-label">Version</label><input class="field-input" id="d-version" placeholder="e.g. v2.1" /></div>
-          <div class="field"><label class="field-label">File Name</label><input class="field-input" id="d-file_name" placeholder="document.pdf" /></div>
-          <div class="field"><label class="field-label">Effective Date</label><input class="field-input" id="d-effective_date" type="date" /></div>
-          <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="d-expiration_date" type="date" /></div>
-          <div class="field" style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="field-input" id="d-description" rows="2"></textarea></div>
-        </div>
-        <div id="doc-modal-error" class="error-msg" style="display:none"></div>
-        <div class="modal-actions">
-          <button class="btn-ghost" onclick="closeModal('doc-modal')">Cancel</button>
-          <button class="btn-primary" onclick="saveDoc()">Add Document</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ── MEMBER DETAIL DRAWER ─────────────────────────────────── -->
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <div class="drawer" id="member-drawer">
@@ -909,6 +779,11 @@
     </div>
   </div>
 
+
+  <!-- Supabase SDK (CDN — no npm needed) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/app.js"></script>
+
   <!-- ── NEW MEETING MODAL ───────────────────────────────────── -->
   <div class="modal-overlay" id="meeting-modal" style="display:none" onclick="closeModal('meeting-modal')">
     <div class="modal" onclick="event.stopPropagation()">
@@ -1146,8 +1021,136 @@
     </div>
   </div>
 
-  <!-- Supabase SDK (CDN — no npm needed) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="js/app.js"></script>
+
+<!-- ── MEMBER MODAL ───────────────────────────────────────────── -->
+  <div class="modal-overlay" id="member-modal" style="display:none" onclick="closeModal('member-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title" id="member-modal-title">Add Member</span>
+        <button class="modal-close" onclick="closeModal('member-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">First Name *</label><input class="field-input" id="m-first_name" /></div>
+          <div class="field"><label class="field-label">Last Name *</label><input class="field-input" id="m-last_name" /></div>
+          <div class="field"><label class="field-label">Primary Email *</label><input class="field-input" id="m-email_primary" type="email" /></div>
+          <div class="field"><label class="field-label">Mobile Phone</label><input class="field-input" id="m-phone_mobile" /></div>
+          <div class="field"><label class="field-label">City</label><input class="field-input" id="m-city" /></div>
+          <div class="field"><label class="field-label">State</label><input class="field-input" id="m-state" maxlength="2" /></div>
+          <div class="field"><label class="field-label">Employer</label><input class="field-input" id="m-employer" /></div>
+          <div class="field"><label class="field-label">Occupation</label><input class="field-input" id="m-occupation" /></div>
+          <div class="field"><label class="field-label">Member Number</label><input class="field-input" id="m-member_number" /></div>
+          <div class="field"><label class="field-label">Chapter Initiated</label><input class="field-input" id="m-chapter_initiated" /></div>
+          <div class="field"><label class="field-label">Initiated Date</label><input class="field-input" id="m-initiated_date" type="date" /></div>
+          <div class="field">
+            <label class="field-label">Membership Status</label>
+            <select class="field-input" id="m-membership_status">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+              <option value="honorary">Honorary</option>
+              <option value="life">Life</option>
+            </select>
+          </div>
+        </div>
+        <div id="member-modal-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('member-modal')">Cancel</button>
+          <button class="btn-primary" id="member-save-btn" onclick="saveMember()">Add Member</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── EVENT MODAL ────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="event-modal" style="display:none" onclick="closeModal('event-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title" id="event-modal-title">New Event</span>
+        <button class="modal-close" onclick="closeModal('event-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Event Name *</label><input class="field-input" id="e-event_name" /></div>
+          <div class="field">
+            <label class="field-label">Event Type</label>
+            <select class="field-input" id="e-event_type">
+              <option value="chapter_meeting">Chapter Meeting</option>
+              <option value="community_service">Community Service</option>
+              <option value="social">Social</option>
+              <option value="fundraiser">Fundraiser</option>
+              <option value="scholarship">Scholarship</option>
+              <option value="fraternal">Fraternal</option>
+              <option value="national">National</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field"><label class="field-label">Event Date *</label><input class="field-input" id="e-event_date" type="date" /></div>
+          <div class="field"><label class="field-label">Location</label><input class="field-input" id="e-location" /></div>
+          <div class="field">
+            <label class="field-label">Approval Status</label>
+            <select class="field-input" id="e-approval_status">
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="denied">Denied</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="field-input" id="e-description" rows="3"></textarea></div>
+        </div>
+        <div class="checkbox-row">
+          <label class="check-label"><input type="checkbox" id="e-requires_approval" /> Requires Approval</label>
+          <label class="check-label"><input type="checkbox" id="e-requires_insurance" /> Requires Insurance</label>
+          <label class="check-label"><input type="checkbox" id="e-requires_bgc" /> BGC Required</label>
+          <label class="check-label"><input type="checkbox" id="e-insurance_filed" /> Insurance Filed</label>
+        </div>
+        <div id="event-modal-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('event-modal')">Cancel</button>
+          <button class="btn-primary" id="event-save-btn" onclick="saveEvent()">Create Event</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DOCUMENT MODAL ─────────────────────────────────────────── -->
+  <div class="modal-overlay" id="doc-modal" style="display:none" onclick="closeModal('doc-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Add Document Record</span>
+        <button class="modal-close" onclick="closeModal('doc-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Title *</label><input class="field-input" id="d-title" /></div>
+          <div class="field">
+            <label class="field-label">Category</label>
+            <select class="field-input" id="d-doc_category">
+              <option value="constitution_bylaws">Constitution & Bylaws</option>
+              <option value="financial_policy">Financial Policy</option>
+              <option value="minutes">Minutes</option>
+              <option value="calendar">Calendar</option>
+              <option value="strategic_plan">Strategic Plan</option>
+              <option value="historical">Historical</option>
+              <option value="compliance">Compliance</option>
+              <option value="operational">Operational</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field"><label class="field-label">Version</label><input class="field-input" id="d-version" placeholder="e.g. v2.1" /></div>
+          <div class="field"><label class="field-label">File Name</label><input class="field-input" id="d-file_name" placeholder="document.pdf" /></div>
+          <div class="field"><label class="field-label">Effective Date</label><input class="field-input" id="d-effective_date" type="date" /></div>
+          <div class="field"><label class="field-label">Expiration Date</label><input class="field-input" id="d-expiration_date" type="date" /></div>
+          <div class="field" style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="field-input" id="d-description" rows="2"></textarea></div>
+        </div>
+        <div id="doc-modal-error" class="error-msg" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="closeModal('doc-modal')">Cancel</button>
+          <button class="btn-primary" onclick="saveDoc()">Add Document</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
